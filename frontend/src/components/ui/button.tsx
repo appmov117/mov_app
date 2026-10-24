@@ -10,9 +10,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-brand-strong text-white",
         taxi: "bg-brand-strong text-white",
-        ghost: "bg-transparent text-marine",
-        danger: "border border-[#f3c1cb] bg-white text-danger",
-        line: "border border-line bg-white text-ink",
+        ghost: "bg-transparent text-ink",
+        danger: "border border-danger/30 bg-surface text-danger",
+        line: "border border-line bg-surface text-ink",
       },
       size: {
         default: "h-12 px-5",

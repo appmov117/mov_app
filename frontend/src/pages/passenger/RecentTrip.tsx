@@ -40,7 +40,7 @@ export function RecentTrip() {
   const view = outcomeView(data, place);
 
   return (
-    <div className="flex flex-1 flex-col bg-white px-5 py-8">
+    <div className="flex flex-1 flex-col bg-surface px-5 py-8">
       <div className="flex flex-col items-center text-center">
         <span className={`grid h-16 w-16 place-items-center rounded-full ${view.tone}`}>{view.icon}</span>
         <h1 className="mt-4 text-balance text-2xl font-extrabold tracking-tight">{view.title}</h1>

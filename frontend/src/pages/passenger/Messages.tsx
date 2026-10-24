@@ -12,7 +12,7 @@ export function PassengerMessages() {
 
   return (
     <Shell>
-      <div className="flex-1 bg-white px-4 py-5">
+      <div className="flex-1 bg-surface px-4 py-5">
         <h1 className="text-[28px] font-extrabold tracking-tight">Mensajes</h1>
         {items.length === 0 && (
           <div className="mt-16 text-center">

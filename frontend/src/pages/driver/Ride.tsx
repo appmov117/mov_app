@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { LocateFixed, MapPinned, MessageCircle, Navigation } from "lucide-react";
+import { ArrowUp, CornerUpLeft, CornerUpRight, LocateFixed, MapPin, MapPinned, MessageCircle, Navigation, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
@@ -12,7 +12,7 @@ import { TripInvoice } from "../../components/TripInvoice.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { api } from "../../lib/api.ts";
 import { km, minutes, pesos } from "../../lib/format.ts";
-import { metersLabel, nextGuidance, turnLabel, turnSymbol, type NavStep } from "../../lib/guidance.ts";
+import { metersLabel, nextGuidance, turnLabel, type NavStep } from "../../lib/guidance.ts";
 import { createLocationReporter, useLiveInterval } from "../../lib/live.ts";
 import { setLocationError, setPosition } from "../../lib/position.ts";
 import { googleMapsUrl, wazeUrl } from "../../lib/maps.ts";
@@ -155,8 +155,6 @@ export function DriverRide() {
     [leg.data?.steps, me?.latitude, me?.longitude],
   );
   const nextStep = guidance.step;
-  const turn = turnLabel(nextStep);
-  const symbol = turnSymbol(nextStep);
 
   if (ride.isLoading) return <Shell nav={false}><Loading label="Cargando viaje" /></Shell>;
 
@@ -206,7 +204,6 @@ export function DriverRide() {
         )
       : null;
   const activeRoute = remainingRoute(liveRoute ?? tripRoute ?? [], me);
-  const etaMin = leg.data ? Math.max(1, Math.round(leg.data.duration_s / 60)) : null;
   const step =
     current.status === "accepted" || current.status === "driver_arriving"
       ? "arrived"
@@ -250,25 +247,16 @@ export function DriverRide() {
           fitPadding={wide ? { top: 160, bottom: 48, left: PANEL_OFFSET, right: 48 } : { top: 160, bottom: 300, left: 48, right: 48 }}
         />
         {current.status !== "driver_arrived" && (
-          <div className="absolute left-3 right-3 top-3 z-20 rounded-2xl bg-surface-dark/95 px-4 py-3 text-white shadow-lg backdrop-blur lg:left-4 lg:right-auto lg:top-4 lg:w-[400px]">
-            <div className="flex items-start gap-3">
-              <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-[#2563EB] text-3xl font-black leading-none">
-                {symbol}
+          <div className="absolute left-3 top-3 z-20 flex max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-surface-dark/90 py-2 pl-2 pr-4 text-white shadow-lg backdrop-blur lg:left-4 lg:top-4">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#2563EB]">
+              <TurnIcon step={nextStep} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-xl font-extrabold leading-none">
+                {metersLabel(guidance.distance_m || nextStep?.distance_m || 0)}
               </span>
-              <span className="min-w-0 flex-1">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#93c5fd]">
-                  {turn} · en {metersLabel(guidance.distance_m || nextStep?.distance_m || 0)}
-                </p>
-                <p className="mt-0.5 text-base font-extrabold leading-snug">
-                  {nextStep?.instruction ?? "Calculando indicaciones…"}
-                </p>
-                <p className="mt-1 truncate text-sm text-white/65">
-                  {etaMin != null ? `${pickingUp ? "Llegas" : "ETA"} ${etaMin} min` : "—"}
-                  {leg.data ? ` · ${km(leg.data.distance_m)}` : ""}
-                  {` · ${String(phaseTitle ?? "").split("·")[0]}`}
-                </p>
-              </span>
-            </div>
+              {nextStep?.name && <span className="mt-1 block truncate text-sm text-white/70">{nextStep.name}</span>}
+            </span>
           </div>
         )}
         <LocationNotice compact className="absolute bottom-4 left-3 right-[84px] z-30 lg:bottom-auto lg:left-4 lg:right-auto lg:top-[150px] lg:w-[400px]" />
@@ -284,7 +272,7 @@ export function DriverRide() {
         <button
           type="button"
           aria-label="Centrar en mi ubicación"
-          className={`absolute bottom-4 right-4 z-20 grid h-12 w-12 place-items-center rounded-full shadow-lg ${follow ? "bg-ink text-white" : "bg-white text-ink"}`}
+          className={`absolute bottom-4 right-4 z-20 grid h-12 w-12 place-items-center rounded-full shadow-lg ${follow ? "bg-ink text-surface" : "bg-surface text-ink"}`}
           onClick={() => {
             setFollow(true);
             setRecenterToken((value) => value + 1);
@@ -336,7 +324,7 @@ export function DriverRide() {
               inputMode="decimal"
               value={fare}
               placeholder={String(current.estimated_fare ?? "")}
-              className="h-12 w-full rounded-2xl bg-white px-3 text-ink"
+              className="h-12 w-full rounded-2xl bg-surface px-3 text-ink"
               onChange={(event) => setFare(event.target.value)}
             />
             <div className="flex gap-2 text-sm">
@@ -345,7 +333,7 @@ export function DriverRide() {
                 ["driver_terminal", "Terminal"],
                 ["other", "Otro"],
               ].map(([id, label]) => (
-                <button key={id} className={`rounded-full px-3 py-2 ${method === id ? "bg-white text-ink" : "bg-white/10"}`} onClick={() => setMethod(id)}>
+                <button key={id} className={`rounded-full px-3 py-2 ${method === id ? "bg-surface text-ink" : "bg-white/10"}`} onClick={() => setMethod(id)}>
                   {label}
                 </button>
               ))}
@@ -377,4 +365,12 @@ export function DriverRide() {
       </section>
     </Shell>
   );
+}
+
+/** Flecha de la próxima maniobra; la calle y la distancia van junto a ella. */
+function TurnIcon({ step }: { step: NavStep | null }) {
+  const label = turnLabel(step);
+  const Icon =
+    label === "Izquierda" ? CornerUpLeft : label === "Derecha" ? CornerUpRight : label === "Retorno" ? Undo2 : label === "Llegada" ? MapPin : ArrowUp;
+  return <Icon size={26} strokeWidth={2.6} aria-label={label} />;
 }

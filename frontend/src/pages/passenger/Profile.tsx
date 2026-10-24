@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
 import { MapStylePicker } from "../../components/MapStylePicker.tsx";
 import { Shell } from "../../components/Shell.tsx";
+import { ThemePicker } from "../../components/ThemePicker.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { LinkRow, SectionTitle } from "../../components/ui/list.tsx";
 import { api } from "../../lib/api.ts";
@@ -21,17 +22,17 @@ export function PassengerProfile() {
 
   return (
     <Shell>
-      <div className="flex flex-1 flex-col bg-white px-4 py-5">
+      <div className="flex flex-1 flex-col bg-surface px-4 py-5">
         <h1 className="text-[28px] font-extrabold tracking-tight">Perfil</h1>
 
         <section className="mt-5 flex flex-col items-center rounded-3xl bg-foam px-4 pb-5 pt-6 text-center">
-          <span className="grid h-20 w-20 place-items-center rounded-full bg-foam text-2xl font-extrabold text-ink ring-4 ring-white">
+          <span className="grid h-20 w-20 place-items-center rounded-full bg-foam text-2xl font-extrabold text-ink ring-4 ring-surface">
             {data ? initials(data.name) : ""}
           </span>
           <EditableName name={data?.name} endpoint="/api/v1/passengers/me" queryKey={["passenger"]} />
           <span className="mt-2 rounded-full bg-foam px-3 py-1 text-xs font-bold text-muted">Pasajero</span>
 
-          <dl className="mt-5 grid w-full grid-cols-2 divide-x divide-line rounded-2xl bg-white py-3">
+          <dl className="mt-5 grid w-full grid-cols-2 divide-x divide-line rounded-2xl bg-surface py-3">
             <Stat label="Viajes" value={data?.total_rides} />
             <Stat label="Lugares guardados" value={data?.places.length} />
           </dl>
@@ -50,6 +51,7 @@ export function PassengerProfile() {
         </ul>
 
         <MapStylePicker />
+        <ThemePicker />
 
         <div className="mt-5 flex gap-3 rounded-2xl bg-foam p-4">
           <Wallet size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />

@@ -69,7 +69,7 @@ export function DocumentCard({ doc, showDriver = false }: { doc: DriverDocument;
   });
 
   return (
-    <article className="rounded-2xl border border-line bg-white p-3">
+    <article className="rounded-2xl border border-line bg-surface p-3">
       <FilePreview path={doc.file_url} alt={doc.label} />
       <div className="px-1 pt-3">
         <div className="flex items-start justify-between gap-2">

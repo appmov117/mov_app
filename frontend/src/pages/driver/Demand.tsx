@@ -83,7 +83,7 @@ export function DriverDemand() {
               </Marker>
             )}
           </FlatMap>
-          <Link to="/conductor" aria-label="Volver" className="absolute left-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-white shadow">
+          <Link to="/conductor" aria-label="Volver" className="absolute left-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-surface shadow">
             <ChevronLeft size={22} />
           </Link>
         </div>
@@ -101,7 +101,7 @@ export function DriverDemand() {
                   key={value}
                   type="button"
                   aria-pressed={hours === value}
-                  className={`rounded-full px-3 py-1.5 text-sm font-semibold ${hours === value ? "bg-white text-ink shadow-sm" : "text-muted"}`}
+                  className={`rounded-full px-3 py-1.5 text-sm font-semibold ${hours === value ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
                   onClick={() => setHours(value)}
                 >
                   {value} h
@@ -136,7 +136,7 @@ export function DriverDemand() {
                     href={googleMapsUrl(center, here)}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-sm font-semibold text-white"
+                    className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-3.5 text-sm font-semibold text-surface"
                   >
                     <Navigation size={15} /> Ir a la zona
                   </a>

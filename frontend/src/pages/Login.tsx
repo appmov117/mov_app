@@ -40,7 +40,7 @@ export function Login() {
       <Link to="/" aria-label="Volver" className="-ml-2 grid h-10 w-10 place-items-center rounded-full text-ink">
         <ChevronLeft size={24} />
       </Link>
-      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-marine">Entrar</h1>
+      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink">Entrar</h1>
       <form className="mt-8 space-y-4" onSubmit={submit}>
         <Field label="Teléfono o correo">
           <Input

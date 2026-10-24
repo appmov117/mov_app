@@ -101,7 +101,7 @@ export function Live() {
       </FlatMap>
       </div>
 
-      <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line bg-white lg:absolute lg:bottom-4 lg:left-4 lg:top-4 lg:w-[400px] lg:flex-none lg:rounded-2xl lg:border lg:shadow-[0_18px_50px_rgba(16,24,32,0.16)]">
+      <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-line bg-surface lg:absolute lg:bottom-4 lg:left-4 lg:top-4 lg:w-[400px] lg:flex-none lg:rounded-2xl lg:border lg:shadow-[0_18px_50px_rgba(16,24,32,0.16)]">
         <div className="border-b border-line px-5 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-extrabold">En vivo</h1>

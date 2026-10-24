@@ -8,6 +8,7 @@
   --color-taxi: #0b6e7f;
   /* Ciudad Blanca y azul maya: el azul es la marca y la acción; el verde solo dice "todo bien". */
   --color-brand: #1497ab;
+  --color-surface: #ffffff;
   --color-foam: #f4f6f8;
   --color-ink: #14232b;
   --color-route: #0b6e7f;
@@ -35,6 +36,47 @@
   --color-star: #e8b21c;
   --color-surface-dark: #12181c;
   --color-surface-dark-raised: #1c252b;
+}
+
+/* Modo oscuro: sigue al sistema salvo que el usuario elija tema en su perfil (data-theme en <html>). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --color-surface: #141a1e;
+  --color-foam: #1d252a;
+  --color-ink: #e7ecef;
+  --color-line: #2c363c;
+  --color-muted: #9ba5ac;
+  --color-brand-soft: #123a40;
+  --color-ok-soft: #133222;
+  --color-ok-strong: #6ee7a0;
+  --color-warn-soft: #3b2a12;
+  --color-warn: #fbbf5a;
+  --color-danger-soft: #401822;
+  --color-danger-strong: #fb8199;
+  --color-info-soft: #18254a;
+  --color-info-strong: #9db8ff;
+  --color-accent-strong: #f2c14e;
+  color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-surface: #141a1e;
+  --color-foam: #1d252a;
+  --color-ink: #e7ecef;
+  --color-line: #2c363c;
+  --color-muted: #9ba5ac;
+  --color-brand-soft: #123a40;
+  --color-ok-soft: #133222;
+  --color-ok-strong: #6ee7a0;
+  --color-warn-soft: #3b2a12;
+  --color-warn: #fbbf5a;
+  --color-danger-soft: #401822;
+  --color-danger-strong: #fb8199;
+  --color-info-soft: #18254a;
+  --color-info-strong: #9db8ff;
+  --color-accent-strong: #f2c14e;
+  color-scheme: dark;
 }
 
 * {

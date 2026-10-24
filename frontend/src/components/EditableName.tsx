@@ -35,7 +35,7 @@ export function EditableName({ name, endpoint, queryKey }: Props) {
             value={draft}
             maxLength={80}
             aria-label="Nombre"
-            className="h-10 min-w-0 flex-1 rounded-xl border border-line bg-white px-3 text-center font-bold outline-none focus:border-ink"
+            className="h-10 min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 text-center font-bold outline-none focus:border-ink"
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={(event) => event.key === "Escape" && setEditing(false)}
           />

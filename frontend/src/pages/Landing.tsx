@@ -48,7 +48,7 @@ export function Landing() {
   }
 
   return (
-    <div className="h-dvh overflow-hidden bg-white">
+    <div className="h-dvh overflow-hidden bg-surface">
       <div className="mx-auto flex h-full max-w-6xl flex-col px-6 pb-6 pt-5 md:grid md:grid-cols-[1fr_1.1fr] md:items-center md:gap-12 md:px-10">
         <div className="flex min-h-0 flex-1 flex-col md:order-2 md:flex-none">
           <header className="flex items-center gap-2.5 md:hidden">
@@ -81,7 +81,7 @@ export function Landing() {
                 disabled={pending !== null}
                 onClick={() => enter(demo.identifier, demo.password, demo.to)}
                 className={`flex h-13 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
-                  demo.primary ? "bg-brand-strong text-white" : "border border-line bg-white text-ink"
+                  demo.primary ? "bg-brand-strong text-white" : "border border-line bg-surface text-ink"
                 }`}
               >
                 <demo.icon size={18} aria-hidden="true" />
@@ -139,12 +139,12 @@ function RouteScene() {
     [20, 296, 120, 44], [154, 296, 70, 44], [238, 296, 142, 44],
   ];
   return (
-    <div className="relative mt-4 min-h-0 w-full flex-1 overflow-hidden rounded-[28px] bg-[#eef3f4] md:mt-0 md:aspect-[400/360] md:max-h-[85dvh] md:flex-none">
+    <div className="relative mt-4 min-h-0 w-full flex-1 overflow-hidden rounded-[28px] bg-foam md:mt-0 md:aspect-[400/360] md:max-h-[85dvh] md:flex-none">
       <svg viewBox="0 0 400 360" className="h-full w-full" role="img" aria-label="Un auto recorre la ruta hasta el punto de recogida">
         {blocks.map(([x, y, w, h]) => (
-          <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} rx="10" fill="#ffffff" />
+          <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} rx="10" fill="var(--color-surface)" />
         ))}
-        <path d={ROUTE} fill="none" stroke="#ffffff" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={ROUTE} fill="none" stroke="var(--color-surface)" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" />
         <path
           d={ROUTE}
           pathLength={1}
@@ -171,7 +171,7 @@ function RouteScene() {
           </g>
         </g>
       </svg>
-      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl bg-white/95 px-4 py-3 shadow-sm backdrop-blur">
+      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl bg-surface/95 px-4 py-3 shadow-sm backdrop-blur">
         <span>
           <span className="block text-xs text-muted">Tu conductor llega en</span>
           <span className="block text-lg font-extrabold text-ink">4 min</span>

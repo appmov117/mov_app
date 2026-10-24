@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
 import { MapStylePicker } from "../../components/MapStylePicker.tsx";
 import { Shell } from "../../components/Shell.tsx";
+import { ThemePicker } from "../../components/ThemePicker.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { LinkRow, SectionTitle } from "../../components/ui/list.tsx";
 import { api } from "../../lib/api.ts";
@@ -21,11 +22,11 @@ export function DriverProfile() {
 
   return (
     <Shell>
-      <div className="flex flex-1 flex-col bg-white px-4 py-5">
+      <div className="flex flex-1 flex-col bg-surface px-4 py-5">
         <h1 className="text-[28px] font-extrabold tracking-tight">Perfil</h1>
 
         <section className="mt-5 flex flex-col items-center rounded-3xl bg-foam px-4 pb-5 pt-6 text-center">
-          <span className="grid h-20 w-20 place-items-center rounded-full bg-foam text-2xl font-extrabold text-ink ring-4 ring-white">
+          <span className="grid h-20 w-20 place-items-center rounded-full bg-foam text-2xl font-extrabold text-ink ring-4 ring-surface">
             {data ? initials(data.name) : ""}
           </span>
           <EditableName name={data?.name} endpoint="/api/v1/drivers/me" queryKey={["driver"]} />
@@ -40,7 +41,7 @@ export function DriverProfile() {
             </span>
           )}
 
-          <dl className="mt-5 grid w-full grid-cols-3 divide-x divide-line rounded-2xl bg-white py-3">
+          <dl className="mt-5 grid w-full grid-cols-3 divide-x divide-line rounded-2xl bg-surface py-3">
             <div className="flex flex-col-reverse items-center">
               <dt className="text-xs text-muted">Calificación</dt>
               <dd className="inline-flex items-center gap-1 text-2xl font-extrabold">
@@ -67,6 +68,7 @@ export function DriverProfile() {
         </ul>
 
         <MapStylePicker />
+        <ThemePicker />
 
         <Button className="mt-auto" variant="danger" onClick={() => logout().then(() => navigate("/"))}>
           <LogOut size={18} aria-hidden="true" /> Cerrar sesión

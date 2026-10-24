@@ -84,7 +84,7 @@ export function Page({ title, description, actions, children }: { title: string;
 
 export function Panel({ title, aside, children, className = "" }: { title?: string; aside?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-2xl border border-line bg-white ${className}`}>
+    <section className={`rounded-2xl border border-line bg-surface ${className}`}>
       {title && (
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <h2 className="font-bold">{title}</h2>
@@ -99,7 +99,7 @@ export function Panel({ title, aside, children, className = "" }: { title?: stri
 export function Kpi({ label, value, note, tone }: { label: string; value: string; note?: string; tone?: "brand" | "warn" | "bad" }) {
   const color = tone === "brand" ? "text-brand-strong" : tone === "warn" ? "text-warn" : tone === "bad" ? "text-danger" : "text-ink";
   return (
-    <div className="rounded-2xl border border-line bg-white px-4 py-3.5 sm:px-5 sm:py-4">
+    <div className="rounded-2xl border border-line bg-surface px-4 py-3.5 sm:px-5 sm:py-4">
       <p className="text-sm text-muted">{label}</p>
       <p className={`mt-1 text-2xl sm:text-3xl font-extrabold tabular-nums tracking-tight ${color}`}>{value}</p>
       {note && <p className="mt-1 text-xs text-muted">{note}</p>}
@@ -115,7 +115,7 @@ export function Filters<T extends string>({ value, options, onChange }: { value:
           key={option.id}
           type="button"
           aria-pressed={value === option.id}
-          className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${value === option.id ? "bg-ink text-white" : "border border-line bg-white text-muted hover:text-ink"}`}
+          className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${value === option.id ? "bg-ink text-surface" : "border border-line bg-surface text-muted hover:text-ink"}`}
           onClick={() => onChange(option.id)}
         >
           {option.label}
@@ -157,8 +157,8 @@ export function Drawer({ title, onClose, children }: { title: string; onClose: (
     return () => window.removeEventListener("keydown", close);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-ink/30" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
-      <aside className="ruta-from-right flex h-full w-full max-w-[520px] flex-col bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex justify-end bg-night/30" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+      <aside className="ruta-from-right flex h-full w-full max-w-[520px] flex-col bg-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <header className="flex items-center justify-between gap-3 border-b border-line px-6 py-4">
           <h2 className="text-lg font-extrabold">{title}</h2>
           <button type="button" aria-label="Cerrar" className="grid h-9 w-9 place-items-center rounded-full bg-foam" onClick={onClose}>

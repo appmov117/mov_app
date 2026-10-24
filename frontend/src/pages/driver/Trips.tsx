@@ -29,7 +29,7 @@ export function DriverTrips() {
 
   return (
     <Shell>
-      <div className="flex-1 bg-white px-4 py-5">
+      <div className="flex-1 bg-surface px-4 py-5">
         <h1 className="text-[28px] font-extrabold tracking-tight">Viajes</h1>
 
         {list.length > 0 && (

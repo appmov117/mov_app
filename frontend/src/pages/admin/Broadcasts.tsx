@@ -67,7 +67,7 @@ export function Broadcasts() {
             </label>
             <div className="rounded-xl bg-foam p-3">
               <p className="mb-2 text-xs text-muted">Así se verá en el teléfono</p>
-              <div className="flex gap-3 rounded-xl bg-white p-3 shadow-sm">
+              <div className="flex gap-3 rounded-xl bg-surface p-3 shadow-sm">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand text-white"><Bell size={16} /></span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-bold">{title || "Título del aviso"}</span>

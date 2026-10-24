@@ -41,7 +41,7 @@ export function TripDetail({ role }: { role: Role }) {
 
   return (
     <Shell nav={false}>
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center bg-white px-2">
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center bg-surface px-2">
         <button
           type="button"
           aria-label={showReceipt ? "Volver al detalle" : "Cerrar"}
@@ -276,7 +276,7 @@ function ReportForm({ rideId, role, safety }: { rideId: string; role: Role; safe
               key={item.id}
               type="button"
               aria-pressed={category === item.id}
-              className={`rounded-full px-3 py-1.5 text-sm font-semibold ${category === item.id ? "bg-ink text-white" : "bg-foam text-ink/70"}`}
+              className={`rounded-full px-3 py-1.5 text-sm font-semibold ${category === item.id ? "bg-ink text-surface" : "bg-foam text-ink/70"}`}
               onClick={() => setCategory(item.id)}
             >
               {item.label}

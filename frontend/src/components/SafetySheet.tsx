@@ -73,9 +73,9 @@ export function SafetySheet({ ride, position, recorder, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 md:items-center md:p-6" role="dialog" aria-modal="true" aria-labelledby="safety-title" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/40 md:items-center md:p-6" role="dialog" aria-modal="true" aria-labelledby="safety-title" onClick={onClose}>
       <section
-        className="ruta-sheet w-full max-w-[430px] rounded-t-[28px] md:rounded-[28px] bg-white px-5 pb-6 pt-3"
+        className="ruta-sheet w-full max-w-[430px] rounded-t-[28px] md:rounded-[28px] bg-surface px-5 pb-6 pt-3"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" />
@@ -182,7 +182,7 @@ function Preview({ stream }: { stream: MediaStream }) {
   useEffect(() => {
     if (ref.current) ref.current.srcObject = stream;
   }, [stream]);
-  return <video ref={ref} className="mt-3 h-32 w-full rounded-2xl bg-ink object-cover" autoPlay muted playsInline />;
+  return <video ref={ref} className="mt-3 h-32 w-full rounded-2xl bg-night object-cover" autoPlay muted playsInline />;
 }
 
 export function elapsed(seconds: number) {

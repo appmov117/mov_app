@@ -32,7 +32,7 @@ export function Shell({ children, nav = true, scroll = true, full = false }: Pro
   const driver = user?.role === "driver";
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-white md:flex-row">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-surface md:flex-row">
       <main className={`relative flex min-h-0 flex-1 flex-col ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>
         {full ? children : <div className="flex min-h-0 flex-1 flex-col md:mx-auto md:w-full md:max-w-2xl">{children}</div>}
       </main>
@@ -45,7 +45,7 @@ export function Shell({ children, nav = true, scroll = true, full = false }: Pro
 
 function TabBar({ items }: { items: { to: string; label: string; icon: typeof Home; end: boolean }[] }) {
   return (
-    <nav className="sticky bottom-0 grid grid-cols-4 border-t border-line bg-white pb-[env(safe-area-inset-bottom)] md:static md:order-first md:flex md:w-24 md:shrink-0 md:flex-col md:items-stretch md:gap-1 md:border-r md:border-t-0 md:px-2 md:py-5">
+    <nav className="sticky bottom-0 grid grid-cols-4 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:static md:order-first md:flex md:w-24 md:shrink-0 md:flex-col md:items-stretch md:gap-1 md:border-r md:border-t-0 md:px-2 md:py-5">
       <span className="mb-5 hidden items-center justify-center md:flex" aria-hidden="true">
         <span className="grid h-11 w-11 place-items-center rounded-full bg-brand shadow">
           <svg width="20" height="20" viewBox="0 0 24 24">

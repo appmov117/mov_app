@@ -40,7 +40,7 @@ export function PassengerHistory() {
 
   return (
     <Shell>
-      <div className="flex-1 bg-white px-4 py-5">
+      <div className="flex-1 bg-surface px-4 py-5">
         <h1 className="text-[28px] font-extrabold tracking-tight">Mis viajes</h1>
         <div className="mt-4 flex gap-2">
           {filters.map((item) => (
@@ -48,7 +48,7 @@ export function PassengerHistory() {
               key={item.id}
               type="button"
               aria-pressed={filter === item.id}
-              className={`rounded-full px-4 py-2 text-sm font-semibold ${filter === item.id ? "bg-ink text-white" : "bg-foam text-ink/70"}`}
+              className={`rounded-full px-4 py-2 text-sm font-semibold ${filter === item.id ? "bg-ink text-surface" : "bg-foam text-ink/70"}`}
               onClick={() => setFilter(item.id)}
             >
               {item.label}

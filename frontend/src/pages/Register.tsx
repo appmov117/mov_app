@@ -68,13 +68,13 @@ export function Register() {
 
   return (
     <div className="mx-auto min-h-dvh max-w-[430px] bg-foam px-5 py-8">
-      <p className="font-display text-3xl text-marine">Crear cuenta</p>
+      <p className="font-display text-3xl text-ink">Crear cuenta</p>
       <div className="mt-5 grid grid-cols-2 gap-2">
         {(["passenger", "driver"] as const).map((item) => (
           <button
             key={item}
             type="button"
-            className={`rounded-full py-2 ${role === item ? "bg-marine text-taxi" : "bg-white"}`}
+            className={`rounded-full py-2 ${role === item ? "bg-ink text-surface" : "bg-surface"}`}
             onClick={() => setRole(item)}
           >
             {item === "passenger" ? "Pasajero" : "Conductor"}
@@ -123,7 +123,7 @@ export function Register() {
           {pending ? "Creando cuenta" : "Crear cuenta"}
         </Button>
       </form>
-      <Link to="/entrar" className="mt-6 inline-block text-sm text-marine">
+      <Link to="/entrar" className="mt-6 inline-block text-sm text-ink underline">
         Ya tengo cuenta
       </Link>
     </div>

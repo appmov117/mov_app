@@ -2,7 +2,7 @@ import { Car } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import Map, { type MapMouseEvent, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapStyle } from "../lib/mapStyle.ts";
+import { useMapUrl } from "../lib/mapStyle.ts";
 
 export type Pin = { latitude: number; longitude: number };
 
@@ -49,8 +49,7 @@ export function MapView({
   onPick,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const [style] = useMapStyle();
-  const standard = style.id === "standard";
+  const mapUrl = useMapUrl();
   const boxRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [path, setPath] = useState("");
@@ -76,26 +75,6 @@ export function MapView({
   fitRef.current = fit;
   padRef.current = fitPadding;
   navigateRef.current = navigate;
-
-  function patchStandardLineProgressLayers() {
-    const map = mapRef.current?.getMap();
-    if (!map) return;
-    let layers: ReturnType<typeof map.getStyle>["layers"];
-    try {
-      layers = map.getStyle().layers;
-    } catch {
-      return;
-    }
-    for (const layer of layers) {
-      // Mapbox Standard currently combines a zoom expression, ground elevation
-      // and a vector source for these layers. Mapbox GL then tries to evaluate
-      // line-progress even though lineMetrics only exists for GeoJSON sources.
-      if (layer.type !== "line" || !layer.id.includes("gate-fence-hedge")) continue;
-      const width = layer.paint?.["line-width"];
-      if (!Array.isArray(width)) continue;
-      map.setPaintProperty(layer.id, "line-width", 1.5);
-    }
-  }
 
   function frameRoute() {
     const map = mapRef.current?.getMap();
@@ -141,12 +120,6 @@ export function MapView({
     const frame = requestAnimationFrame(() => frameRoute());
     return () => cancelAnimationFrame(frame);
   }, [route, fit, ready, navigate]);
-
-  useEffect(() => {
-    if (!ready || !standard) return;
-    // Siempre de día: la interfaz es clara y un mapa nocturno en unas pantallas sí y en otras no confunde.
-    mapRef.current?.getMap().setConfigProperty("basemap", "lightPreset", "day");
-  }, [ready, standard]);
 
   // Cámara estilo navegación: sigue al carro con rumbo
   useEffect(() => {
@@ -284,18 +257,12 @@ export function MapView({
           pitch: 0,
           bearing: 0,
         }}
-        mapStyle={style.url}
-        // Mapa plano: los edificios 3D y la cámara inclinada son lo que más carga la GPU del teléfono.
-        config={standard ? { basemap: { show3dObjects: false } } : undefined}
+        mapStyle={mapUrl}
         pitchWithRotate={false}
         maxPitch={0}
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
-        onLoad={() => {
-          patchStandardLineProgressLayers();
-          setReady(true);
-        }}
-        onStyleData={patchStandardLineProgressLayers}
+        onLoad={() => setReady(true)}
         onClick={(event: MapMouseEvent) => onPick?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })}
       />
       {path && (
@@ -476,7 +443,7 @@ function FlagMarker({ point }: { point: Point }) {
   const checker = `flag${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   return (
     <span className="absolute" style={{ left: point.x, top: point.y }}>
-      <span className="absolute h-2.5 w-2.5 rounded-full border-2 border-white bg-ink shadow" style={{ transform: "translate(-50%, -50%)" }} />
+      <span className="absolute h-2.5 w-2.5 rounded-full border-2 border-white bg-night shadow" style={{ transform: "translate(-50%, -50%)" }} />
       <span className="ruta-drop absolute bottom-0 left-0 block">
         <svg width="30" height="36" viewBox="0 0 30 36" className="drop-shadow-md">
           <defs>

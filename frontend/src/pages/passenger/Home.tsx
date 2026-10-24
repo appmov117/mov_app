@@ -273,13 +273,13 @@ export function PassengerHome() {
         ) : (
           <div className="absolute inset-0 bg-foam" aria-hidden="true" />
         )}
-        <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-white px-3 py-2 shadow md:hidden">
+        <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-surface px-3 py-2 shadow md:hidden">
           <span className="grid h-7 w-7 place-items-center rounded-full bg-brand text-white">
             <Pin />
           </span>
           <span className="text-sm font-extrabold">Ruta</span>
         </div>
-        <Link to="/pasajero/perfil" className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-white shadow" aria-label="Perfil">
+        <Link to="/pasajero/perfil" className="absolute right-3 top-3 z-10 grid h-10 w-10 place-items-center rounded-full bg-surface shadow" aria-label="Perfil">
           <UserRound size={18} />
         </Link>
         <button
@@ -287,12 +287,12 @@ export function PassengerHome() {
           aria-label="Mi ubicación"
           disabled={locating}
           onClick={locate}
-          className="absolute right-3 top-[60px] z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow disabled:opacity-60"
+          className="absolute right-3 top-[60px] z-10 grid h-10 w-10 place-items-center rounded-full bg-surface text-ink shadow disabled:opacity-60"
         >
           <LocateFixed size={18} />
         </button>
       </div>
-      <section className={`relative z-10 -mt-4 overflow-hidden rounded-t-[28px] bg-white shadow-[0_-8px_30px_rgba(16,24,32,0.06)] lg:absolute lg:left-4 lg:top-4 lg:mt-0 lg:max-h-[calc(100%-2rem)] lg:w-[400px] lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)] ${editingMap ? "shrink-0" : "flex min-h-0 flex-1 flex-col md:max-h-[55%] md:flex-none lg:max-h-[calc(100%-2rem)]"}`}>
+      <section className={`relative z-10 -mt-4 overflow-hidden rounded-t-[28px] bg-surface shadow-[0_-8px_30px_rgba(16,24,32,0.06)] lg:absolute lg:left-4 lg:top-4 lg:mt-0 lg:max-h-[calc(100%-2rem)] lg:w-[400px] lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)] ${editingMap ? "shrink-0" : "flex min-h-0 flex-1 flex-col md:max-h-[55%] md:flex-none lg:max-h-[calc(100%-2rem)]"}`}>
         {adjustingOrigin && (
           <div className="px-4 pb-4 pt-5">
             <h1 className="text-xl font-extrabold">Ajusta el punto de encuentro</h1>
@@ -353,7 +353,7 @@ export function PassengerHome() {
                 setDrafts([]);
                 setPlacing((value) => !value);
               }}
-              className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${placing ? "bg-ink text-white" : "bg-foam text-ink"}`}
+              className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${placing ? "bg-ink text-surface" : "bg-foam text-ink"}`}
             >
               <MapPin size={18} />
             </button>
@@ -479,7 +479,7 @@ export function PassengerHome() {
                   key={option.id}
                   type="button"
                   aria-pressed={tier === option.id}
-                  className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left ${tier === option.id ? "border-brand-strong bg-brand-soft" : "border-line bg-white"}`}
+                  className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left ${tier === option.id ? "border-brand-strong bg-brand-soft" : "border-line bg-surface"}`}
                   onClick={() => setTier(option.id)}
                 >
                   <span className="grid h-10 w-10 place-items-center rounded-xl bg-foam text-ink/70">

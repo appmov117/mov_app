@@ -84,9 +84,9 @@ function ChatSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 md:items-center md:p-6" role="dialog" aria-modal="true" aria-labelledby="chat-title" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-night/40 md:items-center md:p-6" role="dialog" aria-modal="true" aria-labelledby="chat-title" onClick={onClose}>
       <section
-        className="ruta-sheet flex h-[min(620px,85dvh)] w-full max-w-[430px] flex-col rounded-t-[28px] md:rounded-[28px] bg-white text-ink"
+        className="ruta-sheet flex h-[min(620px,85dvh)] w-full max-w-[430px] flex-col rounded-t-[28px] md:rounded-[28px] bg-surface text-ink"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
@@ -105,7 +105,7 @@ function ChatSheet({
             const mine = row.sender_role === role;
             return (
               <div key={row.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                <p className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm ${mine ? "rounded-br-md bg-ink text-white" : "rounded-bl-md bg-foam"}`}>
+                <p className={`max-w-[78%] rounded-2xl px-3.5 py-2 text-sm ${mine ? "rounded-br-md bg-ink text-surface" : "rounded-bl-md bg-foam"}`}>
                   {row.body}
                   <span className={`mt-0.5 block text-right text-[10px] ${mine ? "text-white/70" : "text-muted"}`}>
                     {clockTime(row.created_at)}
@@ -145,7 +145,7 @@ function ChatSheet({
               type="submit"
               aria-label="Enviar"
               disabled={!draft.trim() || send.isPending}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-white disabled:opacity-40"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink text-surface disabled:opacity-40"
             >
               <SendHorizontal size={18} />
             </button>

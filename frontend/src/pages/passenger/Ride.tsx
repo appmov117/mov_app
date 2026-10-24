@@ -217,7 +217,7 @@ export function PassengerRide() {
     <Shell nav={false} scroll={false} full>
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {moving && (
-          <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-white/95 px-4 py-3 backdrop-blur">
+          <header className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-surface/95 px-4 py-3 backdrop-blur">
             <p className="font-extrabold">En viaje</p>
             <button className="flex items-center gap-1 text-sm font-semibold text-ink" onClick={share}>
               <Share2 size={16} /> Compartir
@@ -240,7 +240,7 @@ export function PassengerRide() {
           )}
         </div>
         {withDriver && eta != null && status !== "driver_arrived" && (
-          <p className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm font-bold text-white shadow">
+          <p className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full bg-ink px-4 py-2 text-sm font-bold text-surface shadow">
             {status === "driver_arriving" ? `Conductor en camino · ${eta} min` : `Tu conductor llega en ${eta} min`}
           </p>
         )}
@@ -254,13 +254,13 @@ export function PassengerRide() {
             <button
               type="button"
               aria-label="Seguridad y emergencias"
-              className={`grid h-11 w-11 place-items-center rounded-full shadow-lg ${recorder.kind ? "bg-danger text-white" : "bg-white text-danger"}`}
+              className={`grid h-11 w-11 place-items-center rounded-full shadow-lg ${recorder.kind ? "bg-danger text-white" : "bg-surface text-danger"}`}
               onClick={() => setSafetyOpen(true)}
             >
               <ShieldAlert size={20} />
             </button>
             {recorder.kind && (
-              <span className="flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-danger shadow" aria-live="polite">
+              <span className="flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-danger shadow" aria-live="polite">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-danger" aria-hidden="true" />
                 {elapsed(recorder.seconds)}
               </span>
@@ -280,7 +280,7 @@ export function PassengerRide() {
         {safetyOpen && ride && (
           <SafetySheet ride={ride} position={driverLocation} recorder={recorder} onClose={() => setSafetyOpen(false)} />
         )}
-        <section className="ruta-sheet absolute inset-x-0 bottom-0 z-20 rounded-t-[28px] bg-white px-5 pb-5 shadow-[0_-12px_40px_rgba(16,24,32,0.12)] lg:inset-x-auto lg:bottom-4 lg:left-4 lg:max-h-[calc(100%-2rem)] lg:w-[400px] lg:overflow-y-auto lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)]">
+        <section className="ruta-sheet absolute inset-x-0 bottom-0 z-20 rounded-t-[28px] bg-surface px-5 pb-5 shadow-[0_-12px_40px_rgba(16,24,32,0.12)] lg:inset-x-auto lg:bottom-4 lg:left-4 lg:max-h-[calc(100%-2rem)] lg:w-[400px] lg:overflow-y-auto lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)]">
           <button
             type="button"
             aria-expanded={!collapsed}
@@ -534,7 +534,7 @@ function DriverCard({ driver }: { driver: Driver }) {
             <span className="block truncate text-sm font-bold">{vehicle.brand} {vehicle.model}</span>
             {vehicle.color && <span className="block text-xs capitalize text-muted">{vehicle.color}</span>}
           </span>
-          <span className="rounded-md border-2 border-ink bg-white px-2 py-0.5 font-mono text-base font-extrabold tracking-[0.15em]" aria-label={`Placa ${vehicle.plate}`}>
+          <span className="rounded-md border-2 border-ink bg-surface px-2 py-0.5 font-mono text-base font-extrabold tracking-[0.15em]" aria-label={`Placa ${vehicle.plate}`}>
             {vehicle.plate}
           </span>
         </div>

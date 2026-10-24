@@ -121,7 +121,7 @@ function SectionView({ section, alerts }: { section: string; alerts: Alert[] }):
 
 function Sidebar({ badge }: { badge: (key: Section["badge"]) => number }) {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-white lg:flex">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface lg:flex">
       <SidebarContent badge={badge} />
     </aside>
   );
@@ -205,7 +205,7 @@ function MobileBar({ section, badge }: { section: string; badge: (key: Section["
 
   return (
     <>
-      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-white px-2 lg:hidden">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface px-2 lg:hidden">
         <button type="button" aria-label="Abrir menú" aria-expanded={open} className="relative grid h-11 w-11 place-items-center rounded-full" onClick={() => setOpen(true)}>
           <Menu size={22} />
           {pending > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-danger" aria-hidden="true" />}
@@ -214,8 +214,8 @@ function MobileBar({ section, badge }: { section: string; badge: (key: Section["
         <span className="font-extrabold">{current.label}</span>
       </header>
       {open && (
-        <div className="fixed inset-0 z-50 flex bg-ink/30 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú del panel" onClick={() => setOpen(false)}>
-          <aside className="ruta-from-left relative flex h-full w-[84%] max-w-xs flex-col bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex bg-night/30 lg:hidden" role="dialog" aria-modal="true" aria-label="Menú del panel" onClick={() => setOpen(false)}>
+          <aside className="ruta-from-left relative flex h-full w-[84%] max-w-xs flex-col bg-surface shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <button type="button" aria-label="Cerrar menú" className="absolute right-3 top-4 grid h-10 w-10 place-items-center rounded-full bg-foam" onClick={() => setOpen(false)}>
               <X size={18} />
             </button>

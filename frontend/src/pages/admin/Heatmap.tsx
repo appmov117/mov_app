@@ -54,7 +54,7 @@ export function Heatmap() {
         )}
       </FlatMap>
       </div>
-      <aside className="max-h-[52%] shrink-0 overflow-y-auto border-t border-line bg-white p-4 lg:absolute lg:left-4 lg:top-4 lg:max-h-none lg:w-[360px] lg:rounded-2xl lg:border lg:p-5 lg:shadow-[0_18px_50px_rgba(16,24,32,0.16)]">
+      <aside className="max-h-[52%] shrink-0 overflow-y-auto border-t border-line bg-surface p-4 lg:absolute lg:left-4 lg:top-4 lg:max-h-none lg:w-[360px] lg:rounded-2xl lg:border lg:p-5 lg:shadow-[0_18px_50px_rgba(16,24,32,0.16)]">
         <h1 className="hidden text-xl font-extrabold lg:block">Mapa de calor</h1>
         <p className="text-sm text-muted lg:mt-1">{KINDS.find((item) => item.id === kind)?.detail}</p>
         <div className="mt-3 space-y-2 lg:mt-4 lg:space-y-3">

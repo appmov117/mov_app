@@ -237,7 +237,7 @@ export function DriverHome() {
         <button
           type="button"
           aria-label="Centrar en mi ubicación"
-          className="absolute bottom-20 right-4 z-10 grid h-12 w-12 place-items-center rounded-full bg-white text-ink shadow-lg"
+          className="absolute bottom-20 right-4 z-10 grid h-12 w-12 place-items-center rounded-full bg-surface text-ink shadow-lg"
           onClick={() => {
             // Centra de inmediato con la última posición conocida y luego con una lectura nueva.
             if (here) setFocus({ ...here });
@@ -246,10 +246,10 @@ export function DriverHome() {
         >
           <LocateFixed size={22} />
         </button>
-        <div className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full bg-white/95 py-1.5 pl-4 pr-1.5 text-ink shadow-lg backdrop-blur">
+        <div className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full bg-surface/95 py-1.5 pl-4 pr-1.5 text-ink shadow-lg backdrop-blur">
           <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
             {online && <span className="absolute inset-0 animate-ping rounded-full bg-ok opacity-60" />}
-            <span className={`relative h-2.5 w-2.5 rounded-full ${online ? "bg-ok" : "bg-ink/30"}`} />
+            <span className={`relative h-2.5 w-2.5 rounded-full ${online ? "bg-ok" : "bg-night/30"}`} />
           </span>
           <span className="text-sm font-bold">{online ? "En línea" : "Desconectado"}</span>
           <button
@@ -263,13 +263,13 @@ export function DriverHome() {
               toggle.mutate();
             }}
           >
-            <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${online ? "left-[22px]" : "left-0.5"}`} />
+            <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-surface shadow transition-all ${online ? "left-[22px]" : "left-0.5"}`} />
           </button>
         </div>
         <div className="absolute left-3 right-3 top-16 z-30 space-y-2 md:left-1/2 md:right-auto md:w-[400px] md:-translate-x-1/2">
-          {toggle.error && <p className="rounded-2xl bg-white px-3 py-2 text-sm text-danger shadow">{(toggle.error as Error).message}</p>}
+          {toggle.error && <p className="rounded-2xl bg-surface px-3 py-2 text-sm text-danger shadow">{(toggle.error as Error).message}</p>}
           {membership.data && membership.data.status !== "active" && (
-            <Link to="/conductor/membresia" className="block rounded-2xl bg-white px-4 py-3 text-sm font-semibold shadow-lg">
+            <Link to="/conductor/membresia" className="block rounded-2xl bg-surface px-4 py-3 text-sm font-semibold shadow-lg">
               La membresía no está vigente. Renueva $200 para recibir viajes.
             </Link>
           )}
@@ -278,7 +278,7 @@ export function DriverHome() {
         </div>
         <Link
           to="/conductor/demanda"
-          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-white px-4 py-3 text-sm font-bold shadow-lg"
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-3 text-sm font-bold shadow-lg"
         >
           <Flame size={17} className="text-[#ea580c]" aria-hidden="true" /> Ver zonas con demanda
         </Link>
@@ -303,7 +303,7 @@ function CounterWaiting({ offer }: { offer: Offer }) {
       <p className="mt-6 font-semibold">Esperando respuesta del pasajero</p>
       <p className="mt-1 text-sm text-white/60" aria-live="polite">{left} s</p>
       <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-white/10">
-        <span className="ruta-bar block h-full w-1/3 rounded-full bg-white" />
+        <span className="ruta-bar block h-full w-1/3 rounded-full bg-surface" />
       </div>
       <p className="mt-6 max-w-[30ch] text-xs text-white/50">{offer.destination_label?.split(" · ")[0] ?? "Destino"}</p>
     </div>

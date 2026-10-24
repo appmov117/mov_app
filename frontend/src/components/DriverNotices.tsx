@@ -16,7 +16,7 @@ export function LocationNotice({ className = "", compact = false }: { className?
   const [trying, setTrying] = useState(false);
   if (!problem) return null;
   return (
-    <div className={`flex gap-3 rounded-2xl bg-white px-4 py-3 text-sm shadow-lg ${className}`} role="alert">
+    <div className={`flex gap-3 rounded-2xl bg-surface px-4 py-3 text-sm shadow-lg ${className}`} role="alert">
       <MapPinOff size={20} className="mt-0.5 shrink-0 text-danger" aria-hidden="true" />
       <div className="min-w-0">
         <p className="font-bold text-ink">No vemos tu ubicación</p>
@@ -43,7 +43,7 @@ export function AlertsNotice({ className = "" }: { className?: string }) {
   if (permission === "granted" || !("Notification" in window)) return null;
   const blocked = permission === "denied";
   return (
-    <div className={`flex gap-3 rounded-2xl bg-white px-4 py-3 text-sm shadow-lg ${className}`}>
+    <div className={`flex gap-3 rounded-2xl bg-surface px-4 py-3 text-sm shadow-lg ${className}`}>
       <BellRing size={20} className="mt-0.5 shrink-0 text-brand-strong" aria-hidden="true" />
       <div className="min-w-0">
         <p className="font-bold text-ink">{blocked ? "Los avisos de viajes están bloqueados" : "Activa los avisos de viajes nuevos"}</p>

@@ -40,11 +40,11 @@ export function TripInvoice({ ride, role, dark = false, onRated, onDone, submit 
   const [done, setDone] = useState(Boolean(mine));
   const counterpart = role === "passenger" ? ride.driver?.name ?? "Conductor" : ride.passenger?.name ?? "Pasajero";
   const total = ride.fare_amount ?? ride.estimated_fare;
-  const shell = dark ? "bg-surface-dark text-white" : "bg-white text-ink";
+  const shell = dark ? "bg-surface-dark text-white" : "bg-surface text-ink";
   const muted = dark ? "text-white/50" : "text-muted";
   const starOn = dark ? "text-[#F2C14E]" : "text-star";
   const starOff = dark ? "text-white/25" : "text-ink/25";
-  const input = dark ? "bg-white/10 border-white/10 text-white placeholder:text-white/40" : "border-line bg-white text-ink";
+  const input = dark ? "bg-white/10 border-white/10 text-white placeholder:text-white/40" : "border-line bg-surface text-ink";
 
   async function send() {
     setPending(true);
@@ -98,7 +98,7 @@ export function TripInvoice({ ride, role, dark = false, onRated, onDone, submit 
           <p className="mt-8 text-center text-sm font-semibold">Tu calificación</p>
           <Stars value={score} on={starOn} off={starOff} className="mt-2 justify-center" />
           {comment && <p className={`mt-3 text-center text-sm ${muted}`}>“{comment}”</p>}
-          <Button className={`mt-6 ${dark ? "bg-white text-ink hover:bg-white/90" : ""}`} onClick={onDone}>
+          <Button className={`mt-6 ${dark ? "bg-surface text-ink hover:bg-white/90" : ""}`} onClick={onDone}>
             Volver al inicio
           </Button>
         </>

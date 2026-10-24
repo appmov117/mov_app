@@ -27,7 +27,7 @@ export function TripProgress({ remaining, leg, eta, target, compact = false, cla
   const minutes = eta != null ? Math.max(1, Math.round(eta / 60)) : null;
   return (
     <div
-      className={`flex w-16 flex-col items-center rounded-2xl bg-white/95 px-1.5 py-2.5 text-ink shadow-lg backdrop-blur ${className}`}
+      className={`flex w-16 flex-col items-center rounded-2xl bg-surface/95 px-1.5 py-2.5 text-ink shadow-lg backdrop-blur ${className}`}
       role="progressbar"
       aria-label={`Faltan ${km(remaining)} para ${target.toLowerCase()}`}
       aria-valuemin={0}

@@ -54,7 +54,7 @@ export function Timeline({ ride }: { ride: TripRide }) {
     <ol className="relative">
       <span className="absolute bottom-7 left-[7px] top-7 w-0.5 bg-line" aria-hidden="true" />
       <Point
-        marker={<span className="block h-4 w-4 rounded-full border-[3px] border-ink bg-white" />}
+        marker={<span className="block h-4 w-4 rounded-full border-[3px] border-ink bg-surface" />}
         label={ride.origin_label ?? "Origen"}
         time={clockTime(ride.started_at)}
       />
@@ -64,7 +64,7 @@ export function Timeline({ ride }: { ride: TripRide }) {
         </li>
       )}
       <Point
-        marker={<span className="block h-4 w-4 border-[3px] border-ink bg-white" />}
+        marker={<span className="block h-4 w-4 border-[3px] border-ink bg-surface" />}
         label={ride.destination_label?.split(" · ")[0] ?? "Destino"}
         time={clockTime(ride.completed_at)}
       />
@@ -75,7 +75,7 @@ export function Timeline({ ride }: { ride: TripRide }) {
 function Point({ marker, label, time }: { marker: ReactNode; label: string; time: string | null }) {
   return (
     <li className="relative flex items-start gap-4 py-3">
-      <span className="relative mt-0.5 shrink-0 bg-white" aria-hidden="true">{marker}</span>
+      <span className="relative mt-0.5 shrink-0 bg-surface" aria-hidden="true">{marker}</span>
       <span className="min-w-0 flex-1 text-sm leading-snug">{label}</span>
       {time && <span className="shrink-0 text-sm text-muted">{time}</span>}
     </li>

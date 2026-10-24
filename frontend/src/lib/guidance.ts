@@ -31,15 +31,6 @@ export function turnLabel(step: NavStep | null | undefined) {
   return "Sigue";
 }
 
-export function turnSymbol(step: NavStep | null | undefined) {
-  const label = turnLabel(step);
-  if (label === "Izquierda") return "↰";
-  if (label === "Derecha") return "↱";
-  if (label === "Retorno") return "↩";
-  if (label === "Llegada") return "●";
-  return "↑";
-}
-
 /** Elige el siguiente paso de giro según la posición del carro. */
 export function nextGuidance(steps: NavStep[], position: Pin | null | undefined) {
   if (!steps.length) return { step: null as NavStep | null, index: -1, distance_m: 0 };

@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import Map, { NavigationControl, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useMapUrl } from "../lib/mapStyle.ts";
 import type { Pin } from "./MapView.tsx";
 
 const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
@@ -19,6 +20,7 @@ type Props = {
 /** Mapa plano para datos (panel y zonas de demanda): estilo claro, sin 3D, con controles de zoom. */
 export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = { top: 60, bottom: 60, left: 60, right: 60 } }: Props) {
   const ref = useRef<MapRef>(null);
+  const mapUrl = useMapUrl();
   const latest = useRef({ fit, padding });
   latest.current = { fit, padding };
 
@@ -57,7 +59,7 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
       ref={ref}
       mapboxAccessToken={token}
       initialViewState={{ latitude: MERIDA.latitude, longitude: MERIDA.longitude, zoom }}
-      mapStyle="mapbox://styles/mapbox/light-v11"
+      mapStyle={mapUrl}
       style={{ width: "100%", height: "100%" }}
       maxPitch={0}
       pitchWithRotate={false}

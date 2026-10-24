@@ -8,6 +8,9 @@ import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
 import { AuthProvider } from "./lib/auth.tsx";
 import { persistOptions, queryClient } from "./lib/queryCache.ts";
 import "./index.css";
+import { applyTheme } from "./lib/theme.ts";
+
+applyTheme();
 
 // iOS ignora user-scalable=no; se bloquea el pellizco a nivel documento. El mapa usa eventos touch y no se ve afectado.
 for (const type of ["gesturestart", "gesturechange"]) {

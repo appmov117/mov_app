@@ -22,7 +22,7 @@ export function DriverStats() {
 
   return (
     <Shell>
-      <div className="flex-1 bg-white px-4 py-5">
+      <div className="flex-1 bg-surface px-4 py-5">
         <h1 className="text-[28px] font-extrabold tracking-tight">Ganancias</h1>
 
         <div className="mt-4 grid grid-cols-3 gap-1 rounded-full bg-foam p-1" role="tablist" aria-label="Periodo">
@@ -32,7 +32,7 @@ export function DriverStats() {
               type="button"
               role="tab"
               aria-selected={period === item.id}
-              className={`rounded-full py-2 text-sm font-semibold transition ${period === item.id ? "bg-white text-ink shadow-sm" : "text-muted"}`}
+              className={`rounded-full py-2 text-sm font-semibold transition ${period === item.id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
               onClick={() => setPeriod(item.id)}
             >
               {item.label}

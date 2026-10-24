@@ -49,13 +49,13 @@ export function Safety({ alerts }: { alerts: Alert[] }) {
               <Badge status={alert.status} label={alert.status === "open" ? "Abierta" : "Atendida"} />
             </div>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl bg-white p-3 ring-1 ring-line"><PersonCell person={alert.passenger} role="Pasajero" /></div>
-              <div className="rounded-xl bg-white p-3 ring-1 ring-line"><PersonCell person={alert.driver ? { ...alert.driver, plate: alert.plate } : null} role="Conductor" /></div>
+              <div className="rounded-xl bg-surface p-3 ring-1 ring-line"><PersonCell person={alert.passenger} role="Pasajero" /></div>
+              <div className="rounded-xl bg-surface p-3 ring-1 ring-line"><PersonCell person={alert.driver ? { ...alert.driver, plate: alert.plate } : null} role="Conductor" /></div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {alert.location && (
                 <a
-                  className="inline-flex h-10 items-center rounded-full border border-line bg-white px-4 text-sm font-semibold"
+                  className="inline-flex h-10 items-center rounded-full border border-line bg-surface px-4 text-sm font-semibold"
                   href={`https://maps.google.com/?q=${alert.location.latitude},${alert.location.longitude}`}
                   target="_blank"
                   rel="noreferrer"
@@ -115,7 +115,7 @@ function Player({ recording }: { recording: Recording }) {
 
   if (url) {
     return recording.kind === "video" ? (
-      <video src={url} controls playsInline className="w-full max-w-xl rounded-xl bg-ink" />
+      <video src={url} controls playsInline className="w-full max-w-xl rounded-xl bg-night" />
     ) : (
       <audio src={url} controls className="w-full max-w-xl" />
     );

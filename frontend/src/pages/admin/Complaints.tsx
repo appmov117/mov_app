@@ -82,7 +82,7 @@ function ComplaintCard({ item, onRide }: { item: Complaint; onRide: () => void }
   const safety = item.category === "safety";
 
   return (
-    <article className={`rounded-2xl border bg-white p-5 ${safety && item.status === "open" ? "border-danger" : "border-line"}`}>
+    <article className={`rounded-2xl border bg-surface p-5 ${safety && item.status === "open" ? "border-danger" : "border-line"}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="flex flex-wrap items-center gap-2 font-bold">

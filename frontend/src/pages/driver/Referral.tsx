@@ -94,14 +94,14 @@ export function DriverReferral() {
             <button type="button" disabled={!data} className="flex h-11 items-center justify-center gap-2 rounded-full bg-brand-strong text-sm font-semibold text-white disabled:opacity-50" onClick={() => void share()}>
               <Share2 size={16} aria-hidden="true" /> Compartir
             </button>
-            <button type="button" disabled={!data} className="flex h-11 items-center justify-center gap-2 rounded-full border border-line bg-white text-sm font-semibold disabled:opacity-50" onClick={() => void copy()}>
+            <button type="button" disabled={!data} className="flex h-11 items-center justify-center gap-2 rounded-full border border-line bg-surface text-sm font-semibold disabled:opacity-50" onClick={() => void copy()}>
               {copied ? <Check size={16} aria-hidden="true" /> : <Copy size={16} aria-hidden="true" />} {copied ? "Enlace copiado" : "Copiar enlace"}
             </button>
           </div>
           <button type="button" aria-expanded={showQr} className="mt-3 flex w-full items-center justify-center gap-2 py-2 text-sm font-semibold" onClick={() => setShowQr((value) => !value)}>
             <QrCode size={16} aria-hidden="true" /> {showQr ? "Ocultar código QR" : "Mostrar código QR para escanear"}
           </button>
-          {showQr && qr && <img src={qr} alt={`Código QR para registrarse con ${data?.code}`} className="mx-auto mt-2 w-44 rounded-xl bg-white p-2" />}
+          {showQr && qr && <img src={qr} alt={`Código QR para registrarse con ${data?.code}`} className="mx-auto mt-2 w-44 rounded-xl bg-surface p-2" />}
         </section>
 
         <section className="mt-4">
