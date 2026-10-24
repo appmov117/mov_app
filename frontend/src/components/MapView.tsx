@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useCompass } from "../lib/compass.ts";
 import { distanceM } from "../lib/guidance.ts";
 import { tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
+import { useMapRecovery } from "../lib/useMapRecovery.ts";
 
 export type Pin = { latitude: number; longitude: number };
 
@@ -58,12 +59,15 @@ export function MapView({
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const mapStyle = useMapStyleProps();
+  const recovery = useMapRecovery();
+  // Listo solo cuando cargó el mapa actual: al recrearlo, los efectos se vuelven a conectar.
+  const [loadedKey, setLoadedKey] = useState(-1);
+  const ready = loadedKey === recovery.key;
   // Sin destino, el punto azul ya marca dónde estás: el pin A encima solo estorba.
   const originIsMe = Boolean(!destination && me && origin && distanceM(origin, me) < 25);
   // Al ir por el pasajero, el destino de la navegación es la misma recogida: basta con el pin A.
   const destinationIsOrigin = Boolean(origin && destination && distanceM(origin, destination) < 25);
   const boxRef = useRef<HTMLDivElement>(null);
-  const [ready, setReady] = useState(false);
   const [path, setPath] = useState("");
   const [marks, setMarks] = useState<{
     origin: { x: number; y: number } | null;
@@ -266,6 +270,7 @@ export function MapView({
   return (
     <div ref={boxRef} className="absolute inset-0">
       <Map
+        key={recovery.key}
         ref={mapRef}
         mapboxAccessToken={token}
         initialViewState={{
@@ -283,8 +288,9 @@ export function MapView({
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
         onLoad={(event) => {
+          recovery.watch(event.target);
           tuneStyle(event.target, mapStyle.url);
-          setReady(true);
+          setLoadedKey(recovery.key);
         }}
         onStyleData={() => mapRef.current && tuneStyle(mapRef.current.getMap(), mapStyle.url)}
         onClick={(event: MapMouseEvent) => onPick?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })}

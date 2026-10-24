@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import Map, { NavigationControl, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
+import { useMapRecovery } from "../lib/useMapRecovery.ts";
 import type { Pin } from "./MapView.tsx";
 
 const token = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
@@ -21,6 +22,7 @@ type Props = {
 export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = { top: 60, bottom: 60, left: 60, right: 60 } }: Props) {
   const ref = useRef<MapRef>(null);
   const mapStyle = useMapStyleProps();
+  const recovery = useMapRecovery();
   const latest = useRef({ fit, padding });
   latest.current = { fit, padding };
 
@@ -56,6 +58,7 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
   }
   return (
     <Map
+      key={recovery.key}
       ref={ref}
       mapboxAccessToken={token}
       initialViewState={{ latitude: MERIDA.latitude, longitude: MERIDA.longitude, zoom }}
@@ -68,7 +71,10 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
       pitchWithRotate={false}
       dragRotate={false}
       attributionControl={false}
-      onLoad={frame}
+      onLoad={(event) => {
+        recovery.watch(event.target);
+        frame();
+      }}
     >
       <NavigationControl position="bottom-right" showCompass={false} />
       {children}

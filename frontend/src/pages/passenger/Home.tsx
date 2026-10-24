@@ -279,8 +279,8 @@ export function PassengerHome() {
     <Shell nav={!destination && !editingMap} scroll={false} full>
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className={`${editingMap ? "relative min-h-0 flex-1" : "relative min-h-[220px] flex-[0_0_46%] md:flex-1"} lg:absolute lg:inset-0`}>
-        {/* El mapa se crea cuando ya se sabe que no hay viaje activo: si lo hay, la app salta a esa pantalla. */}
-        {active.isSuccess && !active.data?.ride && !active.data?.request ? (
+        {/* El mapa sale de inmediato, aunque el servidor tarde; solo se oculta si ya hay un viaje activo. */}
+        {!active.data?.ride && !active.data?.request ? (
           <MapView
             center={adjustingOrigin ? draftOrigin : destination ?? origin}
             origin={adjustingOrigin ? draftOrigin : origin}
