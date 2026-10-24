@@ -48,23 +48,23 @@ export function Landing() {
   }
 
   return (
-    <div className="min-h-dvh bg-white">
-      <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-6 pb-8 pt-6 md:grid md:grid-cols-[1fr_1.1fr] md:items-center md:gap-12 md:px-10">
-        <div className="flex flex-col md:order-2">
+    <div className="h-dvh overflow-hidden bg-white">
+      <div className="mx-auto flex h-full max-w-6xl flex-col px-6 pb-6 pt-5 md:grid md:grid-cols-[1fr_1.1fr] md:items-center md:gap-12 md:px-10">
+        <div className="flex min-h-0 flex-1 flex-col md:order-2 md:flex-none">
           <header className="flex items-center gap-2.5 md:hidden">
             <Logo />
           </header>
           <RouteScene />
         </div>
 
-        <div className="mt-6 flex flex-1 flex-col md:order-1 md:mt-0 md:flex-none">
+        <div className="mt-5 flex flex-col md:order-1 md:mt-0">
           <header className="mb-10 hidden items-center gap-2.5 md:flex">
             <Logo />
           </header>
-          <h1 className="max-w-[15ch] text-[2.5rem] font-extrabold leading-[1.05] tracking-tight text-ink md:text-6xl">
+          <h1 className="max-w-[15ch] text-[2.5rem] font-extrabold [@media(max-height:700px)]:text-[2rem] leading-[1.05] tracking-tight text-ink md:text-6xl">
             Viajes directos, sin intermediarios.
           </h1>
-          <ul className="mt-5 space-y-2 text-[15px] text-muted md:text-base">
+          <ul className="mt-4 space-y-2 text-[15px] text-muted md:text-base">
             {promises.map((item) => (
               <li key={item} className="flex items-center gap-2.5">
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-strong" aria-hidden="true" />
@@ -73,7 +73,7 @@ export function Landing() {
             ))}
           </ul>
 
-          <div className="mt-auto space-y-3 pt-8 md:mt-10 md:max-w-sm">
+          <div className="space-y-3 pt-6 md:mt-10 md:max-w-sm">
             {demos.map((demo) => (
               <button
                 key={demo.identifier}
@@ -139,7 +139,7 @@ function RouteScene() {
     [20, 296, 120, 44], [154, 296, 70, 44], [238, 296, 142, 44],
   ];
   return (
-    <div className="relative mt-5 aspect-[400/360] w-full overflow-hidden rounded-[28px] bg-[#eef3f4] md:mt-0">
+    <div className="relative mt-4 min-h-0 w-full flex-1 overflow-hidden rounded-[28px] bg-[#eef3f4] md:mt-0 md:aspect-[400/360] md:max-h-[85dvh] md:flex-none">
       <svg viewBox="0 0 400 360" className="h-full w-full" role="img" aria-label="Un auto recorre la ruta hasta el punto de recogida">
         {blocks.map(([x, y, w, h]) => (
           <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} rx="10" fill="#ffffff" />
