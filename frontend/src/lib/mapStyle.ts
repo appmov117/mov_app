@@ -77,19 +77,13 @@ export function useMapStyleProps() {
   return { url, config: url === STANDARD_URL ? (dark ? STANDARD_NIGHT : STANDARD_DAY) : undefined };
 }
 
-const LIGHT_URL = "mapbox://styles/mapbox/light-v11";
-/** Terreno un poco más oscuro que el de fábrica para que las calles blancas resalten. */
-const LIGHT_LAND = "#e3e6e9";
-
 /**
- * Ajustes al cargar el estilo. En Light: fondo algo más oscuro. En Standard: algunas capas de
- * bardas combinan una expresión de zoom con elevación y Mapbox GL falla al evaluar line-progress,
- * así que se les fija un ancho simple.
+ * Ajuste al cargar el estilo: en Standard algunas capas de bardas combinan una expresión de zoom
+ * con elevación y Mapbox GL falla al evaluar line-progress, así que se les fija un ancho simple.
  */
 export function tuneStyle(map: MapboxMap, url: string) {
+  if (url !== STANDARD_URL) return;
   try {
-    if (url === LIGHT_URL && map.getLayer("land")) map.setPaintProperty("land", "background-color", LIGHT_LAND);
-    if (url !== STANDARD_URL) return;
     for (const layer of map.getStyle().layers) {
       if (layer.type !== "line" || !layer.id.includes("gate-fence-hedge")) continue;
       if (Array.isArray(layer.paint?.["line-width"])) map.setPaintProperty(layer.id, "line-width", 1.5);
