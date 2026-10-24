@@ -60,6 +60,8 @@ export function MapView({
   const mapStyle = useMapStyleProps();
   // Sin destino, el punto azul ya marca dónde estás: el pin A encima solo estorba.
   const originIsMe = Boolean(!destination && me && origin && distanceM(origin, me) < 25);
+  // Al ir por el pasajero, el destino de la navegación es la misma recogida: basta con el pin A.
+  const destinationIsOrigin = Boolean(origin && destination && distanceM(origin, destination) < 25);
   const boxRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [path, setPath] = useState("");
@@ -318,7 +320,7 @@ export function MapView({
         {marks.stops.map((point, index) => (
           <MapPinMarker key={`${point.x}-${point.y}-${index}`} point={point} color="#F59E0B" label={String(index + 1)} />
         ))}
-        {marks.destination && <FlagMarker point={marks.destination} />}
+        {marks.destination && !destinationIsOrigin && <FlagMarker point={marks.destination} />}
         {marks.me && !driverIsMe && <LocationDot point={marks.me} heading={null} bearing={marks.bearing} />}
         {marks.driver &&
           (driverIsMe ? (
