@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://ruta:ruta@localhost:5433/ruta"
     jwt_secret: str = "dev-only-change-me"
     access_token_minutes: int = 60
-    refresh_token_days: int = 14
+    refresh_token_days: int = 90
     cors_origins: str = "http://localhost:5173"
     public_app_url: str = "http://localhost:5173"
     membership_price: Decimal = Decimal("200")

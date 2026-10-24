@@ -30,6 +30,11 @@ export function saveTokens(tokens: Tokens) {
   localStorage.setItem(REFRESH, tokens.refresh_token);
 }
 
+/** True mientras haya con qué renovar la sesión: solo un 401 al renovar la borra. */
+export function hasSession() {
+  return Boolean(localStorage.getItem(REFRESH));
+}
+
 export function clearTokens() {
   localStorage.removeItem(ACCESS);
   localStorage.removeItem(REFRESH);
@@ -42,14 +47,20 @@ async function refreshTokens() {
   if (!refresh) return false;
 
   refreshPromise = (async () => {
-    const response = await fetch("/api/v1/auth/refresh", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refresh }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/v1/auth/refresh", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refresh }),
+      });
+    } catch {
+      // Sin red o servidor dormido: la sesión sigue guardada para el siguiente intento.
+      return false;
+    }
     if (!response.ok) {
-      // Otra pestaña pudo renovar la sesión mientras esta petición esperaba.
-      if (localStorage.getItem(REFRESH) === refresh) clearTokens();
+      // Solo un 401 significa sesión vencida; otra pestaña pudo renovarla mientras esperaba.
+      if (response.status === 401 && localStorage.getItem(REFRESH) === refresh) clearTokens();
       return false;
     }
     saveTokens(await response.json());

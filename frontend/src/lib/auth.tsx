@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, clearTokens, saveTokens, type SessionUser } from "./api.ts";
+import { api, clearTokens, hasSession, saveTokens, type SessionUser } from "./api.ts";
 import { disablePush, syncPush } from "./push.ts";
 import { clearQueryCache } from "./queryCache.ts";
 
@@ -18,6 +18,26 @@ async function currentUser() {
   return api<SessionUser>("/api/v1/auth/me");
 }
 
+/** Última cuenta conocida: al abrir la app se entra con ella sin esperar al servidor. */
+const USER_KEY = "ruta_user";
+
+function cachedUser(): SessionUser | null {
+  try {
+    return hasSession() ? JSON.parse(localStorage.getItem(USER_KEY) ?? "null") : null;
+  } catch {
+    return null;
+  }
+}
+
+function rememberUser(user: SessionUser | null) {
+  try {
+    if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_KEY);
+  } catch {
+    // Sin almacenamiento solo se pierde el arranque inmediato; la sesión sigue en el token.
+  }
+}
+
 /** Id del usuario dentro del token (campo `sub`), sin validarlo: solo para comparar sesiones. */
 function tokenUser(token: string | null) {
   try {
@@ -28,16 +48,21 @@ function tokenUser(token: string | null) {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<SessionUser | null>(cachedUser);
+  const [loading, setLoading] = useState(() => cachedUser() === null);
 
   async function refreshUser() {
     try {
       setUser(await currentUser());
     } catch {
-      setUser(null);
+      // Un error de red o del servidor no cierra la sesión; solo una sesión vencida (sin tokens).
+      if (!hasSession()) setUser(null);
     }
   }
+
+  useEffect(() => {
+    rememberUser(user);
+  }, [user]);
 
   useEffect(() => {
     refreshUser().finally(() => setLoading(false));

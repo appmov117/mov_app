@@ -36,18 +36,9 @@ Un solo Web Service de Render sirve la PWA y el API desde el mismo dominio con e
 
 `JWT_SECRET` lo genera Render. Tras el primer despliegue cambia `SEED` a `false`. Sin `SUPABASE_URL` los archivos se guardan en `backend/data/`.
 
-## Cuentas demo
+## Cuentas de prueba (solo local)
 
-En la portada hay dos entradas directas, sin formulario:
-
-| Quién | Rol | Correo | Contraseña |
-| --- | --- | --- | --- |
-| María | Pasajera | maria@ruta.local | Pasajero1234 |
-| Ana | Conductora | ana@ruta.local | Conductor1234 |
-
-También existen luis@ruta.local y marta@ruta.local (Conductor1234) y admin@ruta.local / Admin1234.
-
-Ana, Luis y Marta ya están aprobados, con membresía vigente y conectados cerca del Centro.
+Con `SEED=true` y una base vacía se crean cuentas de prueba: María (pasajera, maria@ruta.local / Pasajero1234), Ana, Luis y Marta (conductores, Conductor1234) y un administrador (admin@ruta.local / Admin1234). Si ya existe un administrador no se crea nada. En producción usa `SEED=false`.
 
 ## Flujo
 

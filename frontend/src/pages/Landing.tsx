@@ -1,26 +1,6 @@
-import { Car, UserRound } from "lucide-react";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { LogIn, UserPlus } from "lucide-react";
+import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth.tsx";
-
-const demos = [
-  {
-    title: "Iniciar como pasajero",
-    identifier: "maria@ruta.local",
-    password: "Pasajero1234",
-    to: "/pasajero",
-    icon: UserRound,
-    primary: true,
-  },
-  {
-    title: "Iniciar como conductor",
-    identifier: "ana@ruta.local",
-    password: "Conductor1234",
-    to: "/conductor",
-    icon: Car,
-    primary: false,
-  },
-] as const;
 
 const promises = [
   "Ves el precio antes de pedir",
@@ -28,25 +8,12 @@ const promises = [
   "Conductores sin comisión por viaje",
 ];
 
+const HOME = { passenger: "/pasajero", driver: "/conductor", admin: "/admin" } as const;
+
 export function Landing() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState("");
-
-  async function enter(identifier: string, password: string, to: string) {
-    setError("");
-    setPending(identifier);
-    try {
-      await login(identifier, password);
-      navigate(to);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo entrar");
-    } finally {
-      setPending(null);
-    }
-  }
-
+  const { user } = useAuth();
+  // La app instalada abre aquí: con sesión guardada se entra directo, sin volver a iniciar.
+  if (user) return <Navigate to={HOME[user.role]} replace />;
   return (
     <div className="h-dvh overflow-hidden bg-surface">
       <div className="mx-auto flex h-full max-w-6xl flex-col px-6 pb-6 pt-5 md:grid md:grid-cols-[1fr_1.1fr] md:items-center md:gap-12 md:px-10">
@@ -74,33 +41,22 @@ export function Landing() {
           </ul>
 
           <div className="space-y-3 pt-6 md:mt-10 md:max-w-sm">
-            {demos.map((demo) => (
-              <button
-                key={demo.identifier}
-                type="button"
-                disabled={pending !== null}
-                onClick={() => enter(demo.identifier, demo.password, demo.to)}
-                className={`flex h-13 w-full items-center justify-center gap-2 rounded-full text-base font-semibold transition active:scale-[0.98] disabled:opacity-60 ${
-                  demo.primary ? "bg-brand-strong text-white" : "border border-line bg-surface text-ink"
-                }`}
-              >
-                <demo.icon size={18} aria-hidden="true" />
-                {pending === demo.identifier ? "Entrando" : demo.title}
-              </button>
-            ))}
-            {error && (
-              <p className="text-center text-sm text-danger" role="alert">
-                {error}
-              </p>
-            )}
+            <Link
+              to="/entrar"
+              className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-brand-strong text-base font-semibold text-white transition active:scale-[0.98]"
+            >
+              <LogIn size={18} aria-hidden="true" /> Iniciar sesión
+            </Link>
+            <Link
+              to="/registro"
+              className="flex h-13 w-full items-center justify-center gap-2 rounded-full border border-line bg-surface text-base font-semibold text-ink transition active:scale-[0.98]"
+            >
+              <UserPlus size={18} aria-hidden="true" /> Crear cuenta
+            </Link>
             <p className="pt-1 text-center text-sm text-muted">
-              ¿Ya tienes cuenta?{" "}
-              <Link to="/entrar" className="font-semibold text-ink underline">
-                Iniciar sesión
-              </Link>
-              {" · "}
-              <Link to="/registro" className="font-semibold text-ink underline">
-                Crear cuenta
+              ¿Manejas?{" "}
+              <Link to="/registro?rol=driver" className="font-semibold text-ink underline">
+                Regístrate como conductor
               </Link>
             </p>
           </div>
