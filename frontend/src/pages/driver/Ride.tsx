@@ -151,8 +151,8 @@ export function DriverRide() {
     refetchInterval: 15_000,
   });
   const guidance = useMemo(
-    () => nextGuidance(leg.data?.steps ?? [], me),
-    [leg.data?.steps, me?.latitude, me?.longitude],
+    () => nextGuidance(leg.data?.steps ?? [], me, leg.data?.route.coordinates),
+    [leg.data?.steps, leg.data?.route, me?.latitude, me?.longitude],
   );
   const nextStep = guidance.step;
 
