@@ -46,14 +46,29 @@ export function useCompass(enabled: boolean) {
       else window.addEventListener("deviceorientation", onIOS);
     };
     const orientation = DeviceOrientationEvent as unknown as PermissionRequest;
-    const onFirstTouch = () => {
-      void orientation.requestPermission?.().then((state) => state === "granted" && listen()).catch(() => undefined);
+    // Safari solo concede el permiso dentro de un toque completo (click o touchend).
+    const stopAsking = () => {
+      window.removeEventListener("click", ask);
+      window.removeEventListener("touchend", ask);
+    };
+    const ask = () => {
+      void orientation
+        .requestPermission?.()
+        .then((state) => {
+          stopAsking();
+          if (state === "granted") listen();
+        })
+        // Fuera de un gesto válido se rechaza: se vuelve a intentar con el siguiente toque.
+        .catch(() => undefined);
     };
     // Donde no hace falta permiso los eventos llegan desde ya; en iPhone empiezan tras aceptar.
     listen();
-    if (orientation.requestPermission) window.addEventListener("pointerdown", onFirstTouch, { once: true });
+    if (orientation.requestPermission) {
+      window.addEventListener("click", ask);
+      window.addEventListener("touchend", ask);
+    }
     return () => {
-      window.removeEventListener("pointerdown", onFirstTouch);
+      stopAsking();
       window.removeEventListener("deviceorientationabsolute", onAbsolute);
       window.removeEventListener("deviceorientation", onIOS);
     };

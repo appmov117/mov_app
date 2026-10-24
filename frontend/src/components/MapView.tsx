@@ -435,17 +435,20 @@ function LocationDot({ point, heading: gpsHeading, bearing }: { point: Point; he
     <span className="absolute h-0 w-0" style={{ left: point.x, top: point.y }}>
       {heading != null && (
         <span
-          className="absolute left-0 top-0 h-[72px] w-[72px]"
+          className="absolute left-0 top-0 h-[120px] w-[120px]"
           style={{
             transform: `translate(-50%, -50%) rotate(${heading}deg)`,
-            background: "conic-gradient(from -30deg, rgba(66,133,244,0.55) 0deg 60deg, transparent 60deg)",
+            background: "conic-gradient(from -32deg, rgba(66,133,244,0.7) 0deg 64deg, transparent 64deg)",
             borderRadius: "50%",
-            maskImage: "radial-gradient(circle, #000 20%, transparent 70%)",
-            WebkitMaskImage: "radial-gradient(circle, #000 20%, transparent 70%)",
+            maskImage: "radial-gradient(circle, #000 12%, transparent 72%)",
+            WebkitMaskImage: "radial-gradient(circle, #000 12%, transparent 72%)",
           }}
           aria-hidden="true"
         />
       )}
+      <span className="absolute left-0 top-0 h-14 w-14" style={{ transform: "translate(-50%, -50%)" }} aria-hidden="true">
+        <span className="ruta-halo" />
+      </span>
       <span
         className="absolute left-0 top-0 h-[22px] w-[22px] rounded-full border-[4px] border-white bg-[#4285F4] shadow-[0_1px_6px_rgba(0,0,0,0.35)]"
         style={{ transform: "translate(-50%, -50%)" }}
