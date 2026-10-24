@@ -33,12 +33,10 @@ export type TripRide = {
   driver_rating: Rating;
 };
 
-type MapRide = Pick<TripRide, "origin" | "destination" | "stops" | "route">;
-
 /** Margen del encuadre: arriba deja espacio a la bandera de llegada, que sobresale de su punto. */
 const ROUTE_PADDING = { top: 56, bottom: 32, left: 32, right: 32 };
 
-export function RouteMap({ ride, className = "h-44" }: { ride: MapRide; className?: string }) {
+export function RouteMap({ ride, className = "h-44" }: { ride: TripRide; className?: string }) {
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-foam ${className}`}>
       <MapView

@@ -249,9 +249,9 @@ export function MapView({
     };
   }, [routeKey]);
 
-  const blue = navigate;
-  const lineColor = blue ? "#3563FF" : "#0B6E7F";
-  const casingColor = blue ? "#1D3FC4" : "#FFFFFF";
+  // Un solo color de ruta y de pines en todas las pantallas; el azul queda solo para "estás aquí".
+  const lineColor = "#0B6E7F";
+  const casingColor = "#FFFFFF";
   const lineWidth = navigate ? 9 : 7;
   const drawn = progress < 1 ? partialPath(path, progress) : { points: path, tip: null };
 
@@ -314,7 +314,7 @@ export function MapView({
       )}
       <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden="true">
         {marks.origin && !(navigate && driver) && !originIsMe && (
-          <MapPinMarker point={marks.origin} color={destination && !pulse ? "#0B6E7F" : "#2563EB"} pulse={pulse || !destination} label="A" />
+          <MapPinMarker point={marks.origin} color="#0B6E7F" pulse={pulse || !destination} label="A" />
         )}
         {marks.origin && navigate && driver && <MapPinMarker point={marks.origin} color="#0B6E7F" label="A" />}
         {marks.stops.map((point, index) => (

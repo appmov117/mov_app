@@ -249,7 +249,7 @@ export function DriverRide() {
         />
         {current.status !== "driver_arrived" && (
           <div className="absolute left-3 top-3 z-20 flex max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-surface-dark/90 py-2 pl-2 pr-4 text-white shadow-lg backdrop-blur lg:left-4 lg:top-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#2563EB]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-strong">
               <TurnIcon step={nextStep} />
             </span>
             <span className="min-w-0">
