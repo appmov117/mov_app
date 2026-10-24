@@ -2,8 +2,9 @@ import { Car } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import Map, { type MapMouseEvent, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useCompass } from "../lib/compass.ts";
 import { distanceM } from "../lib/guidance.ts";
-import { useMapUrl } from "../lib/mapStyle.ts";
+import { tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
 
 export type Pin = { latitude: number; longitude: number };
 
@@ -56,7 +57,7 @@ export function MapView({
   me = null,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
-  const mapUrl = useMapUrl();
+  const mapStyle = useMapStyleProps();
   // Sin destino, el punto azul ya marca dónde estás: el pin A encima solo estorba.
   const originIsMe = Boolean(!destination && me && origin && distanceM(origin, me) < 25);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -272,13 +273,18 @@ export function MapView({
           pitch: 0,
           bearing: 0,
         }}
-        mapStyle={mapUrl}
+        mapStyle={mapStyle.url}
+        config={mapStyle.config}
         maxZoom={20}
         pitchWithRotate={false}
         maxPitch={0}
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
-        onLoad={() => setReady(true)}
+        onLoad={(event) => {
+          tuneStyle(event.target, mapStyle.url);
+          setReady(true);
+        }}
+        onStyleData={() => mapRef.current && tuneStyle(mapRef.current.getMap(), mapStyle.url)}
         onClick={(event: MapMouseEvent) => onPick?.({ latitude: event.lngLat.lat, longitude: event.lngLat.lng })}
       />
       {path && (
@@ -313,10 +319,10 @@ export function MapView({
           <MapPinMarker key={`${point.x}-${point.y}-${index}`} point={point} color="#F59E0B" label={String(index + 1)} />
         ))}
         {marks.destination && <FlagMarker point={marks.destination} />}
-        {marks.me && !driverIsMe && <LocationDot point={marks.me} heading={null} />}
+        {marks.me && !driverIsMe && <LocationDot point={marks.me} heading={null} bearing={marks.bearing} />}
         {marks.driver &&
           (driverIsMe ? (
-            <LocationDot point={marks.driver} heading={onScreen(heading, marks.bearing)} />
+            <LocationDot point={marks.driver} heading={heading} bearing={marks.bearing} />
           ) : (
             <CarMarker point={marks.driver} heading={onScreen(heading, marks.bearing)} />
           ))}
@@ -418,8 +424,13 @@ function onScreen(heading: number | null, bearing: number) {
   return heading != null && !Number.isNaN(heading) ? heading - bearing : null;
 }
 
-/** Punto azul de "estás aquí", con un cono hacia donde te mueves cuando hay rumbo. */
-function LocationDot({ point, heading }: { point: Point; heading: number | null }) {
+/**
+ * Punto azul de "estás aquí" con un cono hacia donde miras: usa el rumbo del GPS si lo hay
+ * (al manejar es más estable) y, si no, la brújula del teléfono.
+ */
+function LocationDot({ point, heading: gpsHeading, bearing }: { point: Point; heading: number | null; bearing: number }) {
+  const compass = useCompass(true);
+  const heading = onScreen(gpsHeading ?? compass, bearing);
   return (
     <span className="absolute h-0 w-0" style={{ left: point.x, top: point.y }}>
       {heading != null && (
