@@ -45,6 +45,7 @@ from app.rides.service import tick
 from app.safety.router import router as safety_router
 from app.seed import seed_if_empty
 from app.users.models import User
+from app.users.router import router as users_router
 from app.vehicles.router import router as vehicles_router
 
 logger = logging.getLogger("ruta")
@@ -287,6 +288,7 @@ for item in (
     referrals_router,
     notifications_router,
     admin_router,
+    users_router,
 ):
     app.include_router(item, prefix="/api/v1")
 

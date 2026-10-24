@@ -14,6 +14,7 @@ from app.core.support import audit, track, utcnow
 from app.drivers.models import Driver
 from app.passengers.models import Passenger
 from app.referrals.service import attach_referral, ensure_code
+from app.users.avatar import avatar_url
 from app.users.models import User
 from app.vehicles.models import Vehicle
 from sqlalchemy import or_, select
@@ -61,6 +62,7 @@ def public_user(db: Session, user: User) -> dict:
         "email": user.email,
         "role": user.role,
         "status": user.status,
+        "avatar_url": avatar_url(user),
     }
     if user.role == "driver":
         driver = db.scalar(select(Driver).where(Driver.user_id == user.id))

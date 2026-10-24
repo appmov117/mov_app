@@ -10,6 +10,7 @@ export type SessionUser = {
   email: string | null;
   role: Role;
   status: string;
+  avatar_url: string | null;
   driver_id?: string | null;
   passenger_id?: string | null;
   verification_status?: string | null;

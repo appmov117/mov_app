@@ -4,13 +4,13 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
 import { MapStylePicker } from "../../components/MapStylePicker.tsx";
+import { ProfilePhoto } from "../../components/ProfilePhoto.tsx";
 import { Shell } from "../../components/Shell.tsx";
 import { ThemePicker } from "../../components/ThemePicker.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { LinkRow, SectionTitle } from "../../components/ui/list.tsx";
 import { api } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
-import { initials } from "../../lib/format.ts";
 
 type Profile = { name: string; phone: string; email: string | null; total_rides: number; places: unknown[] };
 
@@ -26,9 +26,7 @@ export function PassengerProfile() {
         <h1 className="text-[28px] font-extrabold tracking-tight">Perfil</h1>
 
         <section className="mt-5 flex flex-col items-center rounded-3xl bg-foam px-4 pb-5 pt-6 text-center">
-          <span className="grid h-20 w-20 place-items-center rounded-full bg-foam text-2xl font-extrabold text-ink ring-4 ring-surface">
-            {data ? initials(data.name) : ""}
-          </span>
+          <ProfilePhoto name={data?.name} />
           <EditableName name={data?.name} endpoint="/api/v1/passengers/me" queryKey={["passenger"]} />
           <span className="mt-2 rounded-full bg-foam px-3 py-1 text-xs font-bold text-muted">Pasajero</span>
 
