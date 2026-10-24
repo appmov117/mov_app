@@ -5,6 +5,9 @@ os.environ["SEED"] = "false"
 os.environ["TESTING"] = "true"
 os.environ["LOCATION_MIN_INTERVAL_S"] = "0"
 os.environ["JWT_SECRET"] = "test-secret"
+# Las pruebas nunca escriben en el Storage real aunque el .env tenga sus claves.
+os.environ["SUPABASE_URL"] = ""
+os.environ["SUPABASE_SERVICE_KEY"] = ""
 
 import psycopg
 import pytest
