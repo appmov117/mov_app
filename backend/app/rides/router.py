@@ -23,6 +23,7 @@ from app.rides.service import (
     reject_offer,
     start_ride,
 )
+from app.rides.zones import ensure_pickup_allowed
 from app.users.models import User
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -32,6 +33,7 @@ router = APIRouter(tags=["rides"])
 
 @router.post("/ride-requests/estimate")
 async def estimate(data: RideRequestIn, user: User = Depends(require_role("passenger"))):
+    ensure_pickup_allowed(data.origin.latitude, data.origin.longitude)
     return await build_estimate(
         (data.origin.latitude, data.origin.longitude),
         (data.destination.latitude, data.destination.longitude),

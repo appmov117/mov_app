@@ -16,6 +16,7 @@ from app.rides import repository
 from app.rides.chaining import URBAN_MPS, finishing_candidates
 from app.rides.models import Ride, RideEvent, RideOffer, RideRequest
 from app.rides.ranking import MAX_CANDIDATES, Leg, order_candidates, pickup_legs
+from app.rides.zones import ensure_pickup_allowed
 from app.users.models import User
 from app.vehicles.models import Vehicle
 from sqlalchemy import func, select
@@ -430,6 +431,7 @@ async def create_request(db: Session, user: User, payload) -> dict:
     passenger = passenger_for_user(db, user)
     if _active_ride_for_passenger(db, passenger.id) or _open_request(db, passenger.id):
         raise AppError(409, "Ya tienes un viaje en curso")
+    ensure_pickup_allowed(payload.origin.latitude, payload.origin.longitude)
     estimate = await build_estimate(
         (payload.origin.latitude, payload.origin.longitude),
         (payload.destination.latitude, payload.destination.longitude),

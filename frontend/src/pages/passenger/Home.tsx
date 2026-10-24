@@ -123,6 +123,8 @@ export function PassengerHome() {
   const estimate = useQuery({
     queryKey: ["estimate", quoteOrigin, destination, waypoints],
     enabled: Boolean(destination),
+    // Un rechazo del servidor (p. ej., recoger en el aeropuerto) no cambia al reintentar.
+    retry: false,
     placeholderData: (previous, query) => (query?.queryKey[2] === destination ? previous : undefined),
     queryFn: () =>
       api<Estimate>("/api/v1/ride-requests/estimate", {
@@ -499,7 +501,9 @@ export function PassengerHome() {
                 </button>
               ))}
             </div>
-            {requestRide.error && <p className="mt-3 text-sm text-danger">{(requestRide.error as Error).message}</p>}
+            {(requestRide.error ?? estimate.error) && (
+              <p className="mt-3 text-sm text-danger" role="alert">{((requestRide.error ?? estimate.error) as Error).message}</p>
+            )}
             <button
               type="button"
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-line py-3 text-sm font-semibold"
