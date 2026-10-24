@@ -4,7 +4,7 @@ from uuid import uuid4
 from app.core import storage
 from app.core.deps import require_role
 from app.db.session import get_db
-from app.memberships.service import create_payment, membership_view, renewal_terms
+from app.memberships.service import create_payment, membership_view, payment_history, renewal_terms
 from app.rides.service import driver_for_user
 from app.users.models import User
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -22,6 +22,11 @@ class PaymentIn(BaseModel):
 def current(user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
     driver = driver_for_user(db, user)
     return membership_view(db, driver.id)
+
+
+@router.get("/payments")
+def payments(user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return payment_history(db, driver_for_user(db, user).id)
 
 
 @router.post("/payment")

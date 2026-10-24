@@ -164,3 +164,24 @@ def create_payment(db: Session, driver_id: UUID, method: str, reference: str | N
     db.add(payment)
     db.flush()
     return payment
+
+
+def payment_history(db: Session, driver_id: UUID) -> list[dict]:
+    """Pagos de membresía del conductor, del más reciente al más antiguo."""
+    rows = db.scalars(
+        select(MembershipPayment)
+        .where(MembershipPayment.driver_id == driver_id)
+        .order_by(MembershipPayment.created_at.desc())
+        .limit(50)
+    ).all()
+    return [
+        {
+            "id": str(row.id),
+            "amount": float(row.amount),
+            "method": row.payment_method,
+            "status": row.status,
+            "created_at": row.created_at.isoformat(),
+            "reviewed_at": row.reviewed_at.isoformat() if row.reviewed_at else None,
+        }
+        for row in rows
+    ]
