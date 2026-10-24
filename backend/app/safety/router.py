@@ -13,7 +13,7 @@ from app.safety.service import (
 )
 from app.users.models import User
 from fastapi import APIRouter, Depends, File, Form, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -73,5 +73,5 @@ def recordings(user: User = Depends(require_role("admin")), db: Session = Depend
 def recording_download(
     recording_id: UUID, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)
 ):
-    path, mime = recording_file(db, recording_id)
-    return FileResponse(path, media_type=mime)
+    content, mime = recording_file(db, recording_id)
+    return Response(content, media_type=mime)

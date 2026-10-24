@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import mimetypes
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -9,7 +10,7 @@ from alembic import command
 from alembic.config import Config
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -19,6 +20,7 @@ from app.admin.router import router as admin_router
 from app.auth.router import router as auth_router
 from app.complaints.router import router as complaints_router
 from app.config.settings import settings
+from app.core import storage
 from app.core.deps import get_current_user
 from app.core.errors import AppError
 from app.core.security import decode_access_token
@@ -46,7 +48,6 @@ from app.vehicles.router import router as vehicles_router
 
 logger = logging.getLogger("ruta")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 
 class RequestLogMiddleware(BaseHTTPMiddleware):
@@ -217,10 +218,11 @@ def download_file(
         raise HTTPException(status_code=404)
     if user.role != "admin" and not _owns_file(db, user, f"{folder}/{name}"):
         raise HTTPException(status_code=404)
-    path = DATA_DIR / folder / name
-    if not path.exists():
+    content = storage.load(f"{folder}/{name}")
+    if content is None:
         raise HTTPException(status_code=404)
-    return FileResponse(path)
+    media_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
+    return Response(content, media_type=media_type)
 
 
 @app.websocket("/ws/rides/{ride_id}")
@@ -287,3 +289,17 @@ for item in (
     app.include_router(item, prefix="/api/v1")
 
 app.include_router(live_router)
+
+
+if settings.frontend_dist:
+    dist = Path(settings.frontend_dist).resolve()
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def frontend(path: str):
+        """Sirve la PWA compilada y responde index.html en las rutas del cliente."""
+        if path.startswith(("api/", "ws/")):
+            raise HTTPException(status_code=404)
+        target = (dist / path).resolve()
+        if path and target.is_file() and target.is_relative_to(dist):
+            return FileResponse(target)
+        return FileResponse(dist / "index.html")

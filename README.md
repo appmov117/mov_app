@@ -16,7 +16,25 @@ cd frontend && npm install && npm run dev
 
 La app queda en http://localhost:5173 y la API en http://localhost:8000/api/v1.
 
-La base es PostgreSQL + PostGIS. En producción apunta `DATABASE_URL` al proyecto de Supabase y el API se despliega en Railway con `backend/Dockerfile`.
+La base es PostgreSQL + PostGIS.
+
+## Despliegue en Render + Supabase
+
+Un solo Web Service de Render sirve la PWA y el API desde el mismo dominio con el `Dockerfile` de la raíz. Supabase aloja la base y los archivos subidos.
+
+1. En Supabase activa la extensión `postgis` (Database → Extensions) y crea un bucket privado llamado `uploads` (Storage).
+2. En Render elige New → Blueprint y selecciona este repositorio; `render.yaml` crea el servicio.
+3. Llena las variables que pide:
+
+| Variable | Valor |
+| --- | --- |
+| `DATABASE_URL` | Cadena del Session pooler de Supabase con prefijo `postgresql+psycopg://` y `?sslmode=require` al final |
+| `SUPABASE_URL` | `https://<proyecto>.supabase.co` |
+| `SUPABASE_SERVICE_KEY` | Clave `service_role` (Project Settings → API) |
+| `PUBLIC_APP_URL`, `CORS_ORIGINS` | La URL `https://<servicio>.onrender.com` |
+| `MAPBOX_ACCESS_TOKEN`, `VITE_MAPBOX_TOKEN` | Token de Mapbox |
+
+`JWT_SECRET` lo genera Render. Tras el primer despliegue cambia `SEED` a `false`. Sin `SUPABASE_URL` los archivos se guardan en `backend/data/`.
 
 ## Cuentas demo
 

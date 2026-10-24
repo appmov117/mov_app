@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     request_ttl_seconds: int = 90
     monthly_reward_cap_days: int = 45
     redis_url: str = ""
+    supabase_url: str = ""
+    supabase_service_key: SecretStr = SecretStr("")
+    supabase_bucket: str = "uploads"
+    frontend_dist: str = ""
     mapbox_access_token: str = Field(default="", validation_alias=AliasChoices("MAPBOX_ACCESS_TOKEN", "API_KEY"))
 
     @property

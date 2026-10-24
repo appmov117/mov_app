@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from app.config.settings import settings
+from app.core import storage
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.memberships.service import create_payment, membership_view
@@ -12,7 +13,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/drivers/me/membership", tags=["memberships"])
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
 
 class PaymentIn(BaseModel):
@@ -51,10 +51,8 @@ async def receipt(
 
         raise AppError(400, "Sube una imagen o un PDF")
     content = await file.read()
-    folder = DATA_DIR / "receipts"
-    folder.mkdir(parents=True, exist_ok=True)
-    stored = f"{uuid4()}{ext}"
-    (folder / stored).write_bytes(content)
-    row = create_payment(db, driver.id, "bank_transfer", None, f"receipts/{stored}")
+    key = f"receipts/{uuid4()}{ext}"
+    storage.save(key, content)
+    row = create_payment(db, driver.id, "bank_transfer", None, key)
     db.commit()
     return {"payment_id": str(row.id), "status": "pending"}

@@ -1,13 +1,14 @@
 import uuid
 
 import pytest
+from app.core import storage
 from app.safety import service as safety_service
 from tests.conftest import login, make_admin, ready_driver, register
 
 
 @pytest.fixture
 def recordings_dir(tmp_path, monkeypatch):
-    monkeypatch.setattr(safety_service, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(storage, "DATA_DIR", tmp_path)
     return tmp_path
 
 
@@ -112,4 +113,4 @@ def test_recording_rejects_wrong_type_and_oversize(client, recordings_dir, monke
 
     monkeypatch.setitem(safety_service.MAX_BYTES, "audio", 4)
     assert upload(client, passenger, ride_id, content=b"demasiado").status_code == 413
-    assert not list((recordings_dir / "recordings").iterdir())
+    assert not list(recordings_dir.rglob("*.*"))

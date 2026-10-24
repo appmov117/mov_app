@@ -3,6 +3,7 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 from app.complaints.models import Complaint
+from app.core import storage
 from app.core.errors import AppError
 from app.core.support import money, track, utcnow
 from app.drivers.models import Driver, DriverDocument, DriverSession
@@ -14,7 +15,6 @@ from app.users.models import User
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 DOC_KINDS = {"identity", "license", "plate", "vehicle_photo", "driver_photo"}
 
 
@@ -181,11 +181,9 @@ def save_document(db: Session, user: User, kind: str, filename: str | None, cont
         raise AppError(400, "Sube una imagen o un PDF")
     if len(content) > 8_000_000:
         raise AppError(400, "El archivo supera 8 MB")
-    folder = DATA_DIR / "documents"
-    folder.mkdir(parents=True, exist_ok=True)
-    stored = f"{uuid4()}{ext}"
-    (folder / stored).write_bytes(content)
-    row = DriverDocument(driver_id=driver.id, kind=kind, file_url=f"documents/{stored}", status="pending")
+    key = f"documents/{uuid4()}{ext}"
+    storage.save(key, content)
+    row = DriverDocument(driver_id=driver.id, kind=kind, file_url=key, status="pending")
     db.add(row)
     db.commit()
     return {"id": str(row.id), "kind": kind, "status": row.status}

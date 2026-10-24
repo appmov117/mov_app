@@ -1,7 +1,8 @@
-from pathlib import Path
+from tempfile import SpooledTemporaryFile
 from typing import BinaryIO
 from uuid import UUID, uuid4
 
+from app.core import storage
 from app.core.errors import AppError
 from app.core.support import audit, read_point, track, utcnow
 from app.drivers.models import Driver
@@ -15,7 +16,6 @@ from app.vehicles.models import Vehicle
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 RECORDINGS = "recordings"
 CHUNK = 1024 * 1024
 MAX_BYTES = {"audio": 30_000_000, "video": 150_000_000}
@@ -131,29 +131,25 @@ def save_recording(
     if ext is None or not mime.startswith(f"{kind}/"):
         raise AppError(400, "Formato de grabación no soportado")
     ride, passenger = _own_ride(db, user, ride_id)
-    folder = DATA_DIR / RECORDINGS
-    folder.mkdir(parents=True, exist_ok=True)
-    stored = f"{uuid4()}{ext}"
-    target = folder / stored
+    key = f"{RECORDINGS}/{uuid4()}{ext}"
     size = 0
-    with target.open("wb") as out:
+    with SpooledTemporaryFile(max_size=CHUNK * 8) as buffer:
         while chunk := stream.read(CHUNK):
             size += len(chunk)
             if size > MAX_BYTES[kind]:
-                out.close()
-                target.unlink(missing_ok=True)
                 raise AppError(413, "La grabación es demasiado grande")
-            out.write(chunk)
-    if size == 0:
-        target.unlink(missing_ok=True)
-        raise AppError(400, "La grabación está vacía")
+            buffer.write(chunk)
+        if size == 0:
+            raise AppError(400, "La grabación está vacía")
+        buffer.seek(0)
+        storage.save(key, buffer, mime)
     row = SafetyRecording(
         ride_id=ride.id,
         passenger_id=passenger.id,
         session_id=session_id,
         segment=segment,
         kind=kind,
-        file_url=f"{RECORDINGS}/{stored}",
+        file_url=key,
         mime_type=mime,
         size_bytes=size,
     )
@@ -194,14 +190,14 @@ def list_recordings(db: Session) -> list[dict]:
     return [{**_present_recording(row), **_people(db, row.ride_id)} for row in rows]
 
 
-def recording_file(db: Session, recording_id: UUID) -> tuple[Path, str]:
+def recording_file(db: Session, recording_id: UUID) -> tuple[bytes, str]:
     row = db.get(SafetyRecording, recording_id)
     if row is None:
         raise AppError(404, "No encontramos la grabación")
-    path = DATA_DIR / row.file_url
-    if not path.exists():
+    content = storage.load(row.file_url)
+    if content is None:
         raise AppError(404, "El archivo ya no existe")
-    return path, row.mime_type
+    return content, row.mime_type
 
 
 def _people(db: Session, ride_id: UUID) -> dict:
