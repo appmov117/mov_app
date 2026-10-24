@@ -18,7 +18,8 @@ from sqlalchemy.orm import Session
 
 RECORDINGS = "recordings"
 CHUNK = 1024 * 1024
-MAX_BYTES = {"audio": 30_000_000, "video": 150_000_000}
+# El plan gratis de Supabase Storage acepta archivos de hasta 50 MB.
+MAX_BYTES = {"audio": 30_000_000, "video": 50_000_000}
 EXTENSIONS = {
     "audio/webm": ".webm",
     "audio/ogg": ".ogg",
