@@ -1,0 +1,287 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --color-night: #101820;
+  --color-marine: #172033;
+  --color-taxi: #0b6e7f;
+  /* Ciudad Blanca y azul maya: el azul es la marca y la acción; el verde solo dice "todo bien". */
+  --color-brand: #1497ab;
+  --color-foam: #f4f6f8;
+  --color-ink: #14232b;
+  --color-route: #0b6e7f;
+  --color-danger: #e11d48;
+  --color-ok: #15803d;
+  --color-ok-strong: #166534;
+  --color-ok-soft: #e7f6ec;
+  --color-line: #e6e8ec;
+  --color-muted: #5f6670;
+  /* Azul maya: el claro para rellenos y mapas; el profundo para texto y botones (5.9:1 sobre blanco). */
+  --color-brand-strong: #0b6e7f;
+  --color-brand-soft: #e3f1f3;
+  --color-brand-bright: #5ed3e0;
+  /* Amarillo de Izamal: acento para calificaciones y demanda; en texto, su versión oscura. */
+  --color-accent: #e8b21c;
+  --color-accent-strong: #a16207;
+  --color-warn: #b45309;
+  --color-warn-soft: #fff4e5;
+  --color-warn-mark: #f59e0b;
+  --color-danger-strong: #be123c;
+  --color-danger-soft: #fde7ec;
+  --color-info: #2563eb;
+  --color-info-strong: #1d4ed8;
+  --color-info-soft: #e8efff;
+  --color-star: #e8b21c;
+  --color-surface-dark: #12181c;
+  --color-surface-dark-raised: #1c252b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  background: var(--color-foam);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--color-brand-strong);
+  outline-offset: 2px;
+}
+
+.maplibregl-map {
+  font-family: inherit;
+  background: #e6e2d8;
+}
+
+.map-night .maplibregl-canvas {
+  filter: invert(1) hue-rotate(180deg) brightness(0.82) contrast(0.92);
+}
+
+.maplibregl-ctrl-attrib {
+  font-size: 9px;
+  background: transparent;
+}
+
+.maplibregl-ctrl-bottom-right {
+  top: 0.5rem;
+  right: auto;
+  bottom: auto;
+  left: 0.5rem;
+}
+
+@keyframes ruta-halo {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes ruta-drop {
+  0% {
+    transform: translateY(-18px) scale(0.55);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(3px) scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes ruta-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ruta-car {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes ruta-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ruta-sheet {
+  from {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ruta-bar {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes ruta-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.ruta-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: rgb(37 99 235 / 0.32);
+  animation: ruta-halo 2.1s ease-out infinite;
+}
+
+.ruta-halo-late {
+  animation-delay: 1.05s;
+}
+
+.ruta-halo-brand {
+  background: rgb(20 151 171 / 0.32);
+}
+
+.maplibregl-marker {
+  z-index: 20;
+}
+
+.ruta-drop {
+  animation: ruta-drop 0.48s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ruta-pop {
+  animation: ruta-pop 0.35s ease-out both;
+}
+
+.ruta-car {
+  animation: ruta-car 1.6s ease-in-out infinite;
+}
+
+.ruta-fade {
+  animation: ruta-fade 0.4s ease-out both;
+}
+
+.ruta-sheet {
+  animation: ruta-sheet 0.4s ease-out both;
+}
+
+/* Menús y paneles laterales: entran desde su borde en 160 ms, sin fundido, para que se vean al instante. */
+@keyframes ruta-slide-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes ruta-slide-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+/* Portada: la ruta se dibuja mientras el auto la recorre (una sola vez). */
+@keyframes ruta-route-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.ruta-route-draw {
+  stroke-dasharray: 1;
+  animation: ruta-route-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.ruta-from-left {
+  animation: ruta-slide-left 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ruta-from-right {
+  animation: ruta-slide-right 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ruta-bar {
+  animation: ruta-bar 1.4s ease-in-out infinite;
+}
+
+.ruta-dot {
+  animation: ruta-dot 1.2s ease-in-out infinite;
+}
+
+@media print {
+  nav,
+  button {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

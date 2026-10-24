@@ -1,0 +1,216 @@
+from uuid import UUID
+
+from app.config.settings import settings
+from app.core.support import read_point
+from app.rides.ranking import Candidate
+from sqlalchemy import bindparam, text
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Session
+
+
+def insert_request(db: Session, params: dict) -> None:
+    db.execute(
+        text(
+            """
+            INSERT INTO ride_requests (
+                id, passenger_id, origin, destination, origin_label, destination_label,
+                estimated_distance_m, estimated_duration_s, estimated_fare, route_geometry, stops,
+                wave, status, created_at, expires_at
+            ) VALUES (
+                :id, :passenger_id,
+                ST_SetSRID(ST_MakePoint(:origin_lng, :origin_lat), 4326)::geography,
+                ST_SetSRID(ST_MakePoint(:destination_lng, :destination_lat), 4326)::geography,
+                :origin_label, :destination_label,
+                :distance_m, :duration_s, :fare, CAST(:geometry AS jsonb), CAST(:stops AS jsonb),
+                0, 'searching', :created_at, :expires_at
+            )
+            """
+        ),
+        params,
+    )
+
+
+def insert_ride(db: Session, params: dict) -> None:
+    db.execute(
+        text(
+            """
+            INSERT INTO rides (
+                id, ride_request_id, passenger_id, driver_id, origin, destination, status, created_at
+            )
+            SELECT :id, id, passenger_id, :driver_id, origin, destination, 'accepted', :created_at
+            FROM ride_requests
+            WHERE id = :request_id
+            """
+        ),
+        params,
+    )
+
+
+def request_coords(db: Session, request_id: UUID) -> dict:
+    origin = read_point(db, "ride_requests", "id", request_id, "origin")
+    destination = read_point(db, "ride_requests", "id", request_id, "destination")
+    return {"origin": origin, "destination": destination}
+
+
+def ride_coords(db: Session, ride_id: UUID) -> dict:
+    origin = read_point(db, "rides", "id", ride_id, "origin")
+    destination = read_point(db, "rides", "id", ride_id, "destination")
+    return {"origin": origin, "destination": destination}
+
+
+def driver_coords(db: Session, driver_id: UUID) -> dict | None:
+    return read_point(db, "driver_locations", "driver_id", driver_id, "location")
+
+
+def upsert_location(db: Session, driver_id: UUID, latitude: float, longitude: float, heading, speed) -> None:
+    db.execute(
+        text(
+            """
+            INSERT INTO driver_locations (driver_id, location, heading, speed, updated_at)
+            VALUES (
+                :driver_id,
+                ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                :heading, :speed, NOW()
+            )
+            ON CONFLICT (driver_id) DO UPDATE SET
+                location = EXCLUDED.location,
+                heading = EXCLUDED.heading,
+                speed = EXCLUDED.speed,
+                updated_at = NOW()
+            """
+        ),
+        {
+            "driver_id": driver_id,
+            "lat": latitude,
+            "lng": longitude,
+            "heading": heading,
+            "speed": speed,
+        },
+    )
+
+
+def find_candidates(
+    db: Session,
+    latitude: float,
+    longitude: float,
+    radius_m: int,
+    limit: int,
+    excluded: list[UUID],
+    favorites: list[UUID],
+) -> list[Candidate]:
+    """Conductores disponibles dentro del radio: favoritos primero y luego por distancia en línea recta."""
+    if not excluded:
+        excluded = [UUID("00000000-0000-0000-0000-000000000000")]
+    if not favorites:
+        favorites = [UUID("00000000-0000-0000-0000-000000000000")]
+    rows = db.execute(
+        text(
+            """
+            SELECT d.id,
+                   ST_Y(dl.location::geometry) AS lat,
+                   ST_X(dl.location::geometry) AS lng,
+                   ST_Distance(dl.location, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography) AS meters,
+                   d.id = ANY(:favorites) AS favorite
+            FROM drivers d
+            JOIN users u ON u.id = d.user_id
+            JOIN driver_locations dl ON dl.driver_id = d.id
+            WHERE d.driver_status = 'online'
+              AND d.verification_status = 'approved'
+              AND u.status = 'active'
+              AND dl.updated_at > NOW() - make_interval(secs => :max_age)
+              AND ST_DWithin(
+                    dl.location,
+                    ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                    :radius
+                  )
+              AND EXISTS (
+                    SELECT 1 FROM memberships m
+                    WHERE m.driver_id = d.id
+                      AND m.status = 'active'
+                      AND m.starts_at <= NOW()
+                      AND m.expires_at > NOW()
+                  )
+              AND NOT EXISTS (
+                    SELECT 1 FROM ride_offers o
+                    WHERE o.driver_id = d.id AND o.status = 'countered'
+                  )
+              AND NOT (d.id = ANY(:excluded))
+            ORDER BY
+              CASE WHEN d.id = ANY(:favorites) THEN 0 ELSE 1 END,
+              ST_Distance(dl.location, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
+            LIMIT :lim
+            """
+        ).bindparams(
+            bindparam("excluded", type_=ARRAY(PG_UUID(as_uuid=True))),
+            bindparam("favorites", type_=ARRAY(PG_UUID(as_uuid=True))),
+        ),
+        {
+            "lat": latitude,
+            "lng": longitude,
+            "radius": radius_m,
+            "excluded": excluded,
+            "favorites": favorites,
+            "lim": limit,
+            "max_age": settings.location_max_age_s,
+        },
+    ).all()
+    return [
+        Candidate(id=row.id, latitude=row.lat, longitude=row.lng, meters=row.meters, favorite=row.favorite)
+        for row in rows
+    ]
+
+
+def pickup_distance_m(db: Session, driver_id: UUID, request_id: UUID) -> int | None:
+    row = db.execute(
+        text(
+            """
+            SELECT ST_Distance(dl.location, rr.origin) AS meters
+            FROM driver_locations dl
+            JOIN ride_requests rr ON rr.id = :request_id
+            WHERE dl.driver_id = :driver_id
+            """
+        ),
+        {"driver_id": driver_id, "request_id": request_id},
+    ).one_or_none()
+    if row is None or row.meters is None:
+        return None
+    return int(row.meters)
+
+
+def save_place(db: Session, place_id: UUID, passenger_id: UUID, label: str, kind: str, lat: float, lng: float) -> None:
+    db.execute(
+        text(
+            """
+            INSERT INTO saved_places (id, passenger_id, label, kind, location)
+            VALUES (:id, :passenger_id, :label, :kind, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
+            """
+        ),
+        {"id": place_id, "passenger_id": passenger_id, "label": label, "kind": kind, "lat": lat, "lng": lng},
+    )
+
+
+def list_places(db: Session, passenger_id: UUID) -> list[dict]:
+    rows = db.execute(
+        text(
+            """
+            SELECT id, label, kind,
+                   ST_Y(location::geometry) AS lat,
+                   ST_X(location::geometry) AS lng
+            FROM saved_places
+            WHERE passenger_id = :passenger_id
+            ORDER BY created_at DESC
+            """
+        ),
+        {"passenger_id": passenger_id},
+    ).all()
+    return [
+        {
+            "id": str(row.id),
+            "label": row.label,
+            "kind": row.kind,
+            "latitude": float(row.lat),
+            "longitude": float(row.lng),
+        }
+        for row in rows
+    ]

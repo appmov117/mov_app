@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ruta
+      POSTGRES_PASSWORD: ruta
+      POSTGRES_DB: ruta
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - ruta_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ruta -d ruta"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    profiles: ["replicas"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+
+volumes:
+  ruta_pg:
