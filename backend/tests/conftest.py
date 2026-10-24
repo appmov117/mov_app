@@ -48,7 +48,7 @@ def clean():
                 saved_places, favorite_drivers, driver_rewards, referrals, complaints, ratings,
                 membership_payments, memberships, ride_events, rides, ride_offers, ride_requests,
                 referral_codes, driver_sessions, driver_locations, driver_documents, vehicles,
-                drivers, passengers, users
+                drivers, passengers, users, app_settings
             RESTART IDENTITY CASCADE
             """
         )

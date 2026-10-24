@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { Button } from "../../components/ui/button.tsx";
+import { Input } from "../../components/ui/input.tsx";
 import { api } from "../../lib/api.ts";
 import { pesos, when } from "../../lib/format.ts";
 import { Badge, Empty, FilePreview, Kpi, Page, Panel, PAYMENT_METHOD, type Person } from "./ui.tsx";
@@ -41,6 +43,8 @@ export function Memberships() {
         <Kpi label="Pagos por revisar" value={String(pending.length)} tone={pending.length ? "warn" : undefined} />
         <Kpi label="Ingresos del mes" value={pesos(data?.revenue_month)} note="Pagos aprobados este mes" />
       </div>
+
+      <PaymentLink />
 
       <Panel title="Pagos por aprobar" className="mt-6">
         {pending.length === 0 && <Empty title="No hay pagos pendientes" detail="Cuando un conductor registra un pago, aparece aquí con su comprobante." />}
@@ -113,5 +117,54 @@ function PendingPayment({ payment }: { payment: Payment }) {
         </div>
       </div>
     </article>
+  );
+}
+
+/** Liga de cobro que ven los conductores al renovar; se cambia sin volver a desplegar la app. */
+function PaymentLink() {
+  const queryClient = useQueryClient();
+  const current = useQuery({ queryKey: ["admin-payment-link"], queryFn: () => api<{ url: string }>("/api/v1/admin/settings/payment-link") });
+  // Sin editar, el campo muestra la liga guardada.
+  const [draft, setDraft] = useState<string | null>(null);
+  const url = draft ?? current.data?.url ?? "";
+  const save = useMutation({
+    mutationFn: () => api<{ url: string }>("/api/v1/admin/settings/payment-link", { method: "PUT", body: JSON.stringify({ url }) }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["admin-payment-link"], data);
+      setDraft(null);
+    },
+  });
+  const changed = current.data != null && url.trim() !== current.data.url;
+
+  return (
+    <Panel title="Liga de pago de la membresía" className="mt-6">
+      <form
+        className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"
+        onSubmit={(event) => {
+          event.preventDefault();
+          save.mutate();
+        }}
+      >
+        <Input
+          type="url"
+          inputMode="url"
+          value={url}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder="https://mpago.la/..."
+          aria-label="Liga de pago"
+          className="sm:flex-1"
+        />
+        <Button type="submit" className="sm:w-auto" disabled={!changed || save.isPending}>
+          {save.isPending ? "Guardando" : "Guardar"}
+        </Button>
+      </form>
+      <p className={`px-5 pb-4 text-sm ${save.isError ? "text-danger" : "text-muted"}`} role={save.isError ? "alert" : undefined}>
+        {save.isError
+          ? save.error instanceof Error ? save.error.message : "No se pudo guardar"
+          : save.isSuccess && !changed
+            ? "Guardada. Los conductores ya ven esta liga al renovar."
+            : "Los conductores la abren al tocar \"Renovar membresía\"."}
+      </p>
+    </Panel>
   );
 }

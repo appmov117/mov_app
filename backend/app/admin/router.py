@@ -15,7 +15,9 @@ from app.admin.service import (
     set_driver_access,
 )
 from app.complaints.service import review
+from app.core.app_settings import payment_url, set_payment_url
 from app.core.deps import require_role
+from app.core.support import audit
 from app.db.session import get_db
 from app.users.models import User
 from fastapi import APIRouter, Depends
@@ -182,3 +184,22 @@ def review_complaint(
     db: Session = Depends(get_db),
 ):
     return review(db, user, complaint_id, data.status)
+
+
+class PaymentLinkIn(BaseModel):
+    url: str
+
+
+@router.get("/settings/payment-link")
+def payment_link(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return {"url": payment_url(db)}
+
+
+@router.put("/settings/payment-link")
+def update_payment_link(
+    data: PaymentLinkIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)
+):
+    url = set_payment_url(db, data.url)
+    audit(db, user.id, "payment_link_updated", {"url": url})
+    db.commit()
+    return {"url": url}

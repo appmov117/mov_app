@@ -3,6 +3,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from app.config.settings import settings
+from app.core.app_settings import payment_url
 from app.core.errors import AppError
 from app.core.support import days_remaining, utcnow
 from app.drivers.models import Driver
@@ -62,7 +63,7 @@ def membership_view(db: Session, driver_id: UUID) -> dict:
         "days_remaining": days_remaining(expires) if expires and status == "active" else 0,
         "price": float(settings.membership_price),
         "days": settings.membership_days,
-        "payment_url": settings.membership_payment_url,
+        "payment_url": payment_url(db),
     }
 
 

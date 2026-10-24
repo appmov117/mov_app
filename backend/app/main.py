@@ -22,6 +22,7 @@ from app.auth.router import router as auth_router
 from app.complaints.router import router as complaints_router
 from app.config.settings import settings
 from app.core import storage
+from app.core.app_settings import payment_url
 from app.core.deps import get_current_user
 from app.core.errors import AppError
 from app.core.security import decode_access_token
@@ -144,7 +145,7 @@ def health():
 
 
 @app.get("/api/v1/meta")
-def meta():
+def meta(db: Session = Depends(get_db)):
     return {
         "zone_name": settings.zone_name,
         "zone": {"latitude": settings.zone_lat, "longitude": settings.zone_lng},
@@ -152,7 +153,7 @@ def meta():
         "membership_days": settings.membership_days,
         "base_fare": float(settings.base_fare),
         "per_km": float(settings.per_km),
-        "payment_url": settings.membership_payment_url,
+        "payment_url": payment_url(db),
     }
 
 

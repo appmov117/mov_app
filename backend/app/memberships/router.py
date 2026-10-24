@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from app.config.settings import settings
 from app.core import storage
+from app.core.app_settings import payment_url
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.memberships.service import create_payment, membership_view
@@ -33,7 +34,7 @@ def payment(data: PaymentIn, user: User = Depends(require_role("driver")), db: S
     return {
         "payment_id": str(row.id),
         "status": row.status,
-        "payment_url": settings.membership_payment_url,
+        "payment_url": payment_url(db),
         "amount": float(settings.membership_price),
     }
 
