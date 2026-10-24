@@ -14,7 +14,8 @@ from app.vehicles.schemas import VehicleCreate
 
 
 def seed_if_empty(db: Session) -> None:
-    if db.scalar(select(User.id).where(User.email == "admin@ruta.local")):
+    # Cualquier administrador basta: el correo del admin inicial puede cambiarse después.
+    if db.scalar(select(User.id).where(User.role == "admin").limit(1)):
         return
     db.add(
         User(
