@@ -27,15 +27,17 @@ export function DriverReferral() {
   const [showQr, setShowQr] = useState(false);
   const [copied, setCopied] = useState(false);
   const data = referral.data;
+  // Con el dominio desde donde se abre la app: no depende de la configuración del servidor.
+  const url = data ? `${window.location.origin}/r/${data.code}` : "";
 
   useEffect(() => {
     if (!data || !showQr) return;
-    void QRCode.toDataURL(data.url, { margin: 1, width: 360 }).then(setQr);
-  }, [data, showQr]);
+    void QRCode.toDataURL(url, { margin: 1, width: 360 }).then(setQr);
+  }, [data, url, showQr]);
 
   async function share() {
     if (!data) return;
-    const text = `Viaja con Ruta: ves el precio antes y pagas directo al conductor. Regístrate con mi código ${data.code}: ${data.url}`;
+    const text = `Viaja con Ruta: ves el precio antes y pagas directo al conductor. Regístrate con mi código ${data.code}: ${url}`;
     if (navigator.share) {
       await navigator.share({ title: "Ruta", text }).catch(() => undefined);
       return;
@@ -45,7 +47,7 @@ export function DriverReferral() {
 
   async function copy() {
     if (!data) return;
-    await navigator.clipboard?.writeText(data.url).catch(() => undefined);
+    await navigator.clipboard?.writeText(url).catch(() => undefined);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2000);
   }

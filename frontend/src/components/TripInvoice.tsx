@@ -2,6 +2,8 @@ import { Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button.tsx";
 import { Stars } from "./ui/stars.tsx";
+import { RouteMap } from "./trip.tsx";
+import type { Pin } from "./MapView.tsx";
 import { km, minutes, payLabel, pesos } from "../lib/format.ts";
 
 export type InvoiceRide = {
@@ -20,6 +22,10 @@ export type InvoiceRide = {
   passenger_rating?: { rating: number; comment: string | null } | null;
   driver_rating?: { rating: number; comment: string | null } | null;
   rating?: { rating: number; comment: string | null } | null;
+  origin?: Pin | null;
+  destination?: Pin | null;
+  stops?: Pin[];
+  route?: { coordinates: number[][] } | null;
 };
 
 type Props = {
@@ -68,6 +74,12 @@ export function TripInvoice({ ride, role, dark = false, onRated, onDone, submit 
       <h1 className="mt-4 text-center text-2xl font-extrabold">Recibo del viaje</h1>
       <p className={`mt-1 text-center text-sm ${muted}`}>{role === "passenger" ? "Pagado directo al conductor" : "Cobro registrado"}</p>
       <p className="mt-5 text-center text-4xl font-extrabold">{pesos(total)}</p>
+      {ride.origin && ride.destination && (
+        <RouteMap
+          ride={{ origin: ride.origin, destination: ride.destination, stops: ride.stops ?? [], route: ride.route ?? null }}
+          className="mt-5 h-44 shrink-0"
+        />
+      )}
       <dl className="mt-6 space-y-3 text-sm">
         <Row label="Origen" value={ride.origin_label?.split(",")[0] ?? "Origen"} muted={muted} />
         <Row label="Destino" value={ride.destination_label?.split(",")[0] ?? "Destino"} muted={muted} />
