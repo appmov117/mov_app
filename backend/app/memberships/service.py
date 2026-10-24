@@ -3,12 +3,13 @@ from decimal import Decimal
 from uuid import UUID
 
 from app.config.settings import settings
-from app.core.app_settings import payment_url
+from app.core.app_settings import half_payment_url, payment_url
 from app.core.errors import AppError
 from app.core.support import days_remaining, utcnow
 from app.drivers.models import Driver
 from app.memberships.models import Membership, MembershipPayment
-from sqlalchemy import select
+from app.referrals.models import DriverReward
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 
@@ -42,9 +43,47 @@ def has_pending_payment(db: Session, driver_id: UUID) -> bool:
     return payment is not None
 
 
+# Recompensa por 10 pasajeros referidos en un mes: la siguiente renovación cuesta la mitad.
+HALF_PRICE_REWARD = "pax10-half"
+
+
+def _half_price_pending(db: Session, driver_id: UUID) -> bool:
+    """True si ganó la mitad de precio y aún no la usa en un pago pendiente o aprobado."""
+    earned = db.scalar(
+        select(func.count())
+        .select_from(DriverReward)
+        .where(DriverReward.driver_id == driver_id, DriverReward.reward_key.like(f"%:{HALF_PRICE_REWARD}"))
+    )
+    if not earned:
+        return False
+    used = db.scalar(
+        select(func.count())
+        .select_from(MembershipPayment)
+        .where(
+            MembershipPayment.driver_id == driver_id,
+            MembershipPayment.amount == settings.membership_price / 2,
+            MembershipPayment.status.in_(("pending", "approved")),
+        )
+    )
+    return earned > used
+
+
+def renewal_terms(db: Session, driver_id: UUID) -> tuple[Decimal, str, str | None]:
+    """Precio, liga y descuento de la siguiente renovación del conductor.
+
+    La mitad de precio solo aplica cuando el admin ya configuró su liga; mientras no exista,
+    el descuento se conserva para la siguiente vez.
+    """
+    half_url = half_payment_url(db)
+    if half_url and _half_price_pending(db, driver_id):
+        return settings.membership_price / 2, half_url, "half"
+    return settings.membership_price, payment_url(db), None
+
+
 def membership_view(db: Session, driver_id: UUID) -> dict:
     current = active_membership(db, driver_id)
     latest = latest_membership(db, driver_id)
+    price, url, discount = renewal_terms(db, driver_id)
     if current:
         status = "active"
         expires = current.expires_at
@@ -61,9 +100,10 @@ def membership_view(db: Session, driver_id: UUID) -> dict:
         "status": status,
         "expires_at": expires.isoformat() if expires else None,
         "days_remaining": days_remaining(expires) if expires and status == "active" else 0,
-        "price": float(settings.membership_price),
+        "price": float(price),
         "days": settings.membership_days,
-        "payment_url": payment_url(db),
+        "payment_url": url,
+        "discount": discount,
     }
 
 
@@ -115,7 +155,7 @@ def add_bonus_days(db: Session, driver_id: UUID, days: int) -> None:
 def create_payment(db: Session, driver_id: UUID, method: str, reference: str | None, receipt_url: str | None):
     payment = MembershipPayment(
         driver_id=driver_id,
-        amount=settings.membership_price,
+        amount=renewal_terms(db, driver_id)[0],
         payment_method=method,
         reference=reference,
         receipt_url=receipt_url,

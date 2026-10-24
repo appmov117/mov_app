@@ -6,7 +6,7 @@ from app.config.settings import settings
 from app.core.deps import month_start
 from app.core.support import utcnow
 from app.drivers.models import Driver
-from app.memberships.service import add_bonus_days
+from app.memberships.service import HALF_PRICE_REWARD, add_bonus_days
 from app.referrals.models import DriverReward, Referral, ReferralCode
 from app.users.models import User
 from sqlalchemy import func, select
@@ -77,6 +77,15 @@ def apply_bonus(db: Session, driver_id: UUID, key: str, days: int) -> int:
     return grant
 
 
+def grant_half_price(db: Session, driver_id: UUID, key: str) -> bool:
+    """Da una vez por mes la renovación a mitad de precio; no suma días ni cuenta para el tope."""
+    exists = db.scalar(select(DriverReward.id).where(DriverReward.driver_id == driver_id, DriverReward.reward_key == key))
+    if exists:
+        return False
+    db.add(DriverReward(driver_id=driver_id, reward_key=key, days=0))
+    return True
+
+
 def on_passenger_ride_completed(db: Session, passenger_user_id: UUID) -> None:
     referral = db.scalar(select(Referral).where(Referral.referred_user_id == passenger_user_id))
     if referral is None or referral.first_completed_ride_at is not None:
@@ -85,6 +94,8 @@ def on_passenger_ride_completed(db: Session, passenger_user_id: UUID) -> None:
     if user is None or user.role != "passenger":
         return
     referral.first_completed_ride_at = utcnow()
+    # La sesión no hace autoflush: sin esto el conteo no incluiría a este pasajero.
+    db.flush()
     qualified = db.scalar(
         select(func.count())
         .select_from(Referral)
@@ -101,7 +112,7 @@ def on_passenger_ride_completed(db: Session, passenger_user_id: UUID) -> None:
     if qualified >= 3:
         awarded = apply_bonus(db, referral.driver_id, f"{month_key}:pax3", 7) > 0 or awarded
     if qualified >= 10:
-        awarded = apply_bonus(db, referral.driver_id, f"{month_key}:pax10", 30) > 0 or awarded
+        awarded = grant_half_price(db, referral.driver_id, f"{month_key}:{HALF_PRICE_REWARD}") or awarded
     if awarded:
         rows = db.scalars(
             select(Referral)

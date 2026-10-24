@@ -15,8 +15,15 @@ from app.admin.service import (
     set_driver_access,
 )
 from app.complaints.service import review
-from app.core.app_settings import payment_url, set_payment_url
+from app.core.app_settings import (
+    HALF_PAYMENT_LINK,
+    PAYMENT_LINK,
+    half_payment_url,
+    payment_url,
+    set_link,
+)
 from app.core.deps import require_role
+from app.core.errors import AppError
 from app.core.support import audit
 from app.db.session import get_db
 from app.users.models import User
@@ -190,16 +197,26 @@ class PaymentLinkIn(BaseModel):
     url: str
 
 
-@router.get("/settings/payment-link")
-def payment_link(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
-    return {"url": payment_url(db)}
+LINKS = {"payment-link": PAYMENT_LINK, "half-payment-link": HALF_PAYMENT_LINK}
 
 
-@router.put("/settings/payment-link")
+def _link_key(name: str) -> str:
+    if name not in LINKS:
+        raise AppError(404, "Ajuste no encontrado")
+    return LINKS[name]
+
+
+@router.get("/settings/{name}")
+def payment_link(name: str, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    key = _link_key(name)
+    return {"url": payment_url(db) if key == PAYMENT_LINK else half_payment_url(db)}
+
+
+@router.put("/settings/{name}")
 def update_payment_link(
-    data: PaymentLinkIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)
+    name: str, data: PaymentLinkIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)
 ):
-    url = set_payment_url(db, data.url)
-    audit(db, user.id, "payment_link_updated", {"url": url})
+    url = set_link(db, _link_key(name), data.url)
+    audit(db, user.id, "payment_link_updated", {"setting": name, "url": url})
     db.commit()
     return {"url": url}

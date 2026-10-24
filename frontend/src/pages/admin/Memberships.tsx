@@ -44,7 +44,18 @@ export function Memberships() {
         <Kpi label="Ingresos del mes" value={pesos(data?.revenue_month)} note="Pagos aprobados este mes" />
       </div>
 
-      <PaymentLink />
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <PaymentLink
+          name="payment-link"
+          title="Liga de pago de la membresía"
+          hint='Los conductores la abren al tocar "Renovar membresía".'
+        />
+        <PaymentLink
+          name="half-payment-link"
+          title="Liga de pago a mitad de precio"
+          hint="La ven quienes juntaron 10 pasajeros referidos en el mes, en su siguiente renovación."
+        />
+      </div>
 
       <Panel title="Pagos por aprobar" className="mt-6">
         {pending.length === 0 && <Empty title="No hay pagos pendientes" detail="Cuando un conductor registra un pago, aparece aquí con su comprobante." />}
@@ -121,23 +132,23 @@ function PendingPayment({ payment }: { payment: Payment }) {
 }
 
 /** Liga de cobro que ven los conductores al renovar; se cambia sin volver a desplegar la app. */
-function PaymentLink() {
+function PaymentLink({ name, title, hint }: { name: string; title: string; hint: string }) {
   const queryClient = useQueryClient();
-  const current = useQuery({ queryKey: ["admin-payment-link"], queryFn: () => api<{ url: string }>("/api/v1/admin/settings/payment-link") });
+  const current = useQuery({ queryKey: ["admin-setting", name], queryFn: () => api<{ url: string | null }>(`/api/v1/admin/settings/${name}`) });
   // Sin editar, el campo muestra la liga guardada.
   const [draft, setDraft] = useState<string | null>(null);
   const url = draft ?? current.data?.url ?? "";
   const save = useMutation({
-    mutationFn: () => api<{ url: string }>("/api/v1/admin/settings/payment-link", { method: "PUT", body: JSON.stringify({ url }) }),
+    mutationFn: () => api<{ url: string }>(`/api/v1/admin/settings/${name}`, { method: "PUT", body: JSON.stringify({ url }) }),
     onSuccess: (data) => {
-      queryClient.setQueryData(["admin-payment-link"], data);
+      queryClient.setQueryData(["admin-setting", name], data);
       setDraft(null);
     },
   });
-  const changed = current.data != null && url.trim() !== current.data.url;
+  const changed = current.data != null && url.trim() !== (current.data.url ?? "");
 
   return (
-    <Panel title="Liga de pago de la membresía" className="mt-6">
+    <Panel title={title}>
       <form
         className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center"
         onSubmit={(event) => {
@@ -151,7 +162,7 @@ function PaymentLink() {
           value={url}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="https://mpago.la/..."
-          aria-label="Liga de pago"
+          aria-label={title}
           className="sm:flex-1"
         />
         <Button type="submit" className="sm:w-auto" disabled={!changed || save.isPending}>
@@ -163,7 +174,9 @@ function PaymentLink() {
           ? save.error instanceof Error ? save.error.message : "No se pudo guardar"
           : save.isSuccess && !changed
             ? "Guardada. Los conductores ya ven esta liga al renovar."
-            : "Los conductores la abren al tocar \"Renovar membresía\"."}
+            : current.data && !current.data.url
+              ? `Sin configurar. ${hint}`
+              : hint}
       </p>
     </Panel>
   );

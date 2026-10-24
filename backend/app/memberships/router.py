@@ -1,12 +1,10 @@
 from pathlib import Path
 from uuid import uuid4
 
-from app.config.settings import settings
 from app.core import storage
-from app.core.app_settings import payment_url
 from app.core.deps import require_role
 from app.db.session import get_db
-from app.memberships.service import create_payment, membership_view
+from app.memberships.service import create_payment, membership_view, renewal_terms
 from app.rides.service import driver_for_user
 from app.users.models import User
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -29,13 +27,14 @@ def current(user: User = Depends(require_role("driver")), db: Session = Depends(
 @router.post("/payment")
 def payment(data: PaymentIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
     driver = driver_for_user(db, user)
+    _price, url, _discount = renewal_terms(db, driver.id)
     row = create_payment(db, driver.id, "mercado_pago_link", data.reference, None)
     db.commit()
     return {
         "payment_id": str(row.id),
         "status": row.status,
-        "payment_url": payment_url(db),
-        "amount": float(settings.membership_price),
+        "payment_url": url,
+        "amount": float(row.amount),
     }
 
 

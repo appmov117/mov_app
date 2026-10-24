@@ -10,6 +10,8 @@ from sqlalchemy import DateTime, Text, func
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 PAYMENT_LINK = "membership_payment_url"
+# Liga de cobro a mitad de precio para quien ganó el descuento por referidos.
+HALF_PAYMENT_LINK = "membership_half_payment_url"
 
 
 class AppSetting(Base):
@@ -26,11 +28,18 @@ def payment_url(db: Session) -> str:
     return row.value if row else settings.membership_payment_url
 
 
-def set_payment_url(db: Session, url: str) -> str:
-    """Guarda la liga de pago tras validar que sea una dirección https.
+def half_payment_url(db: Session) -> str | None:
+    """Liga de pago a mitad de precio, o None si el admin aún no la configura."""
+    row = db.get(AppSetting, HALF_PAYMENT_LINK)
+    return row.value if row else None
+
+
+def set_link(db: Session, key: str, url: str) -> str:
+    """Guarda una liga de pago tras validar que sea una dirección https.
 
     Args:
         db: Sesión de base de datos.
+        key: PAYMENT_LINK o HALF_PAYMENT_LINK.
         url: Liga de cobro, por ejemplo de Mercado Pago.
 
     Returns:
@@ -40,9 +49,9 @@ def set_payment_url(db: Session, url: str) -> str:
     parsed = urlparse(value)
     if parsed.scheme != "https" or not parsed.netloc or len(value) > 500:
         raise AppError(400, "La liga debe empezar con https://")
-    row = db.get(AppSetting, PAYMENT_LINK)
+    row = db.get(AppSetting, key)
     if row is None:
-        db.add(AppSetting(key=PAYMENT_LINK, value=value))
+        db.add(AppSetting(key=key, value=value))
     else:
         row.value = value
         row.updated_at = func.now()

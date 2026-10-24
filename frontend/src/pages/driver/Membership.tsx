@@ -10,6 +10,8 @@ type Membership = {
   days_remaining: number;
   price: number;
   payment_url: string;
+  /** "half": ganó la mitad de precio por 10 pasajeros referidos en un mes. */
+  discount: "half" | null;
 };
 
 export function MembershipPage() {
@@ -50,6 +52,9 @@ export function MembershipPage() {
         <div className="mt-4 rounded-3xl bg-surface-dark-raised p-4">
           <p className="font-bold">Plan conductor</p>
           <p className="mt-1 text-lg font-extrabold">{pesos(data?.price ?? 200)} / 30 días</p>
+          {data?.discount === "half" && (
+            <p className="mt-1 text-sm font-semibold text-brand-bright">Mitad de precio en tu siguiente renovación por tus 10 referidos</p>
+          )}
           <ul className="mt-3 space-y-2 text-sm">
             {["Recibe viajes ilimitados", "0% de comisión por viaje", "Soporte del piloto", "Estadísticas de tus viajes"].map((item) => (
               <li key={item} className="flex items-center gap-2">

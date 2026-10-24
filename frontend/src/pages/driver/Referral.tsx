@@ -110,7 +110,7 @@ export function DriverReferral() {
           <h2 className="mb-2 text-sm font-bold">Cómo se gana</h2>
           <ul className="overflow-hidden rounded-2xl border border-line text-sm">
             <Rule label="3 pasajeros con su primer viaje en el mes" value="7 días" />
-            <Rule label="10 pasajeros con su primer viaje en el mes" value="30 días" />
+            <Rule label="10 pasajeros con su primer viaje en el mes" value="Renuevas a mitad de precio" />
             <Rule label="Un conductor invitado paga su membresía" value="15 días" />
             <Rule label="Máximo por mes" value={`${data?.monthly_cap_days ?? 45} días`} />
           </ul>
