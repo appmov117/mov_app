@@ -18,9 +18,9 @@ export default defineConfig(({ mode }) => {
       strategies: "injectManifest",
       srcDir: "src",
       filename: "sw.ts",
-      // Sin recarga automática: el SW toma control solo (skipWaiting + clientsClaim) y en
-      // desarrollo, donde se regenera en cada carga, autoUpdate provocaba recargas en bucle.
+      // La versión nueva espera hasta que el usuario toca "Actualizar" (UpdatePrompt).
       registerType: "prompt",
+      injectRegister: false,
       devOptions: { enabled: true, type: "module" },
       includeAssets: ["favicon.svg"],
       manifest: {

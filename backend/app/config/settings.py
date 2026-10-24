@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     seed: bool = True
     testing: bool = False
     location_min_interval_s: float = 3
-    location_max_age_s: int = 120
+    location_max_age_s: int = 600
     counter_min_ratio: Decimal = Decimal("0.90")
     counter_max_ratio: Decimal = Decimal("1.10")
     counter_ttl_seconds: int = 15

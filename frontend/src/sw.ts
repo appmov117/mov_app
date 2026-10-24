@@ -7,8 +7,11 @@ type PushPayload = { title: string; body: string; url?: string; tag?: string | n
 
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
-self.skipWaiting();
 clientsClaim();
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
+});
 
 self.addEventListener("push", (event) => {
   const payload: PushPayload = event.data?.json() ?? { title: "Ruta", body: "" };

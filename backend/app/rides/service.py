@@ -13,6 +13,7 @@ from app.passengers.models import FavoriteDriver, Passenger
 from app.ratings.models import Rating
 from app.referrals.service import on_passenger_ride_completed
 from app.rides import repository
+from app.rides.chaining import URBAN_MPS, finishing_candidates
 from app.rides.models import Ride, RideEvent, RideOffer, RideRequest
 from app.rides.ranking import MAX_CANDIDATES, Leg, order_candidates, pickup_legs
 from app.users.models import User
@@ -21,9 +22,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 WAVES = (
-    {"count": 3, "radius": 2000, "wait": 12},
-    {"count": 5, "radius": 4000, "wait": 12},
-    {"count": 8, "radius": 8000, "wait": 15},
+    {"count": 3, "radius": 2000, "wait": 20},
+    {"count": 5, "radius": 4000, "wait": 20},
+    {"count": 8, "radius": 8000, "wait": 20},
 )
 ACTIVE_RIDE = ("accepted", "driver_arriving", "driver_arrived", "in_progress")
 OPEN_REQUEST = ("searching", "offered")
@@ -57,7 +58,19 @@ def _active_ride_for_passenger(db: Session, passenger_id: UUID) -> Ride | None:
 
 
 def _active_ride_for_driver(db: Session, driver_id: UUID) -> Ride | None:
-    return db.scalar(select(Ride).where(Ride.driver_id == driver_id, Ride.status.in_(ACTIVE_RIDE)))
+    """El viaje en curso; si hay uno en espera, se devuelve primero el más antiguo."""
+    return db.scalar(
+        select(Ride)
+        .where(Ride.driver_id == driver_id, Ride.status.in_(ACTIVE_RIDE))
+        .order_by(Ride.created_at)
+        .limit(1)
+    )
+
+
+def _can_queue(db: Session, driver_id: UUID) -> bool:
+    """True si el conductor lleva pasajero a bordo y aún no tiene un viaje en espera."""
+    statuses = db.scalars(select(Ride.status).where(Ride.driver_id == driver_id, Ride.status.in_(ACTIVE_RIDE))).all()
+    return list(statuses) == ["in_progress"]
 
 
 def _open_request(db: Session, passenger_id: UUID) -> RideRequest | None:
@@ -196,6 +209,7 @@ def present_offer(db: Session, offer: RideOffer) -> dict:
         "pickup_distance_m": pickup,
         "pickup_eta_s": pickup_eta,
         "pickup_by_road": by_road,
+        "after_current_ride": offer.status in OPEN_OFFER and _active_ride_for_driver(db, offer.driver_id) is not None,
         "trip_distance_m": request.estimated_distance_m,
         "trip_duration_s": request.estimated_duration_s,
         "estimated_fare": money(request.estimated_fare),
@@ -327,8 +341,18 @@ def _open_next_wave(db: Session, request: RideRequest) -> None:
         _favorite_ids(db, request.passenger_id),
     )
     legs = pickup_legs(origin, pool)
-    candidates = order_candidates(pool, [leg.seconds for leg in legs] if legs else None, spec["count"])
     road = dict(zip((candidate.id for candidate in pool), legs, strict=True)) if legs else {}
+    durations = [leg.seconds for leg in legs] if legs else None
+    finishing = finishing_candidates(db, origin, spec["radius"], _offered_driver_ids(db, request.id))
+    if finishing:
+        # Quien está por terminar compite por tiempo total de llegada; sin Matrix API se estima en línea recta.
+        road.update({candidate.id: leg for candidate, leg in finishing})
+        pool = pool + [candidate for candidate, _ in finishing]
+        durations = [
+            road[c.id].seconds if c.id in road and road[c.id].seconds is not None else c.meters / URBAN_MPS
+            for c in pool
+        ]
+    candidates = order_candidates(pool, durations, spec["count"])
     request.wave = next_wave
     request.wave_started_at = now
     if not candidates:
@@ -385,7 +409,10 @@ def advance_request(db: Session, request_id: UUID) -> None:
     still_waiting = []
     for offer in pending:
         driver = db.get(Driver, offer.driver_id)
-        if driver is None or driver.driver_status != "online":
+        available = driver is not None and (
+            driver.driver_status == "online" or (driver.driver_status == "busy" and _can_queue(db, driver.id))
+        )
+        if not available:
             offer.status = "expired"
             offer.responded_at = now
         else:
@@ -483,7 +510,8 @@ def _lock_offer(db: Session, offer_id: UUID) -> tuple[RideOffer, RideRequest]:
 
 
 def _ensure_driver_available(db: Session, driver: Driver) -> None:
-    if driver.driver_status == "busy" or _active_ride_for_driver(db, driver.id):
+    busy = driver.driver_status == "busy" or _active_ride_for_driver(db, driver.id)
+    if busy and not _can_queue(db, driver.id):
         raise AppError(409, "Ya tienes un viaje activo")
     from app.memberships.service import require_active_membership
 
@@ -506,6 +534,7 @@ def _assign(db: Session, actor: User, request: RideRequest, offer: RideOffer, dr
     for other in others:
         other.status = "expired"
         other.responded_at = now
+    queued = _active_ride_for_driver(db, driver.id) is not None
     ride_id = uuid4()
     repository.insert_ride(
         db,
@@ -519,7 +548,8 @@ def _assign(db: Session, actor: User, request: RideRequest, offer: RideOffer, dr
     track(db, actor.id, "ride_accepted", {"ride_id": str(ride.id)})
     passenger = db.get(Passenger, request.passenger_id)
     if passenger:
-        notify(db, passenger.user_id, "Conductor asignado", "Un conductor aceptó tu viaje", {"ride_id": str(ride.id)})
+        body = "Tu conductor termina un viaje cerca y va hacia ti" if queued else "Un conductor aceptó tu viaje"
+        notify(db, passenger.user_id, "Conductor asignado", body, {"ride_id": str(ride.id)})
     db.commit()
     publish(str(ride.id), {"type": "driver_arriving", "data": {"ride_id": str(ride.id)}})
     return present_ride(db, ride)
@@ -731,7 +761,8 @@ def complete_ride(db: Session, user: User, ride_id: UUID, fare_amount, payment_m
         ride.duration_s = max(int((now - ride.started_at).total_seconds()), 1)
     if driver:
         driver.completed_rides += 1
-        _release_driver(db, driver)
+        if _active_ride_for_driver(db, driver.id) is None:
+            _release_driver(db, driver)
     if passenger:
         passenger.total_rides += 1
         on_passenger_ride_completed(db, passenger.user_id)
@@ -752,7 +783,7 @@ def cancel_ride(db: Session, user: User, ride_id: UUID) -> dict:
     ride.status = "cancelled"
     if driver and driver.user_id == user.id:
         driver.cancelled_rides += 1
-    if driver and driver.driver_status == "busy":
+    if driver and driver.driver_status == "busy" and _active_ride_for_driver(db, driver.id) is None:
         _release_driver(db, driver)
     _event(db, ride.id, "ride_cancelled", {"by": user.role})
     if passenger and passenger.user_id != user.id:

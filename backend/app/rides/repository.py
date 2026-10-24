@@ -161,6 +161,60 @@ def find_candidates(
     ]
 
 
+def find_finishing(
+    db: Session, latitude: float, longitude: float, radius_m: int, limit: int, excluded: list[UUID]
+) -> list:
+    """Conductores con pasajero a bordo cuyo destino queda dentro del radio de la nueva recogida.
+
+    Solo cuentan los que ya no tienen paradas pendientes ni otro viaje en espera.
+    """
+    if not excluded:
+        excluded = [UUID("00000000-0000-0000-0000-000000000000")]
+    return db.execute(
+        text(
+            """
+            SELECT d.id,
+                   ST_Y(dl.location::geometry) AS lat,
+                   ST_X(dl.location::geometry) AS lng,
+                   ST_Y(r.destination::geometry) AS end_lat,
+                   ST_X(r.destination::geometry) AS end_lng,
+                   ST_Distance(dl.location, r.destination) AS to_end_m,
+                   ST_Distance(r.destination, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography) AS end_to_pickup_m
+            FROM drivers d
+            JOIN users u ON u.id = d.user_id
+            JOIN driver_locations dl ON dl.driver_id = d.id
+            JOIN rides r ON r.driver_id = d.id AND r.status = 'in_progress'
+            JOIN ride_requests rr ON rr.id = r.ride_request_id
+            WHERE d.driver_status = 'busy'
+              AND d.verification_status = 'approved'
+              AND u.status = 'active'
+              AND dl.updated_at > NOW() - make_interval(secs => :max_age)
+              AND r.current_stop_index >= jsonb_array_length(COALESCE(rr.stops, '[]'::jsonb))
+              AND ST_DWithin(r.destination, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radius)
+              AND NOT EXISTS (
+                    SELECT 1 FROM rides q
+                    WHERE q.driver_id = d.id AND q.status IN ('accepted', 'driver_arriving', 'driver_arrived')
+                  )
+              AND NOT EXISTS (
+                    SELECT 1 FROM ride_offers o
+                    WHERE o.driver_id = d.id AND o.status = 'countered'
+                  )
+              AND NOT (d.id = ANY(:excluded))
+            ORDER BY end_to_pickup_m
+            LIMIT :lim
+            """
+        ).bindparams(bindparam("excluded", type_=ARRAY(PG_UUID(as_uuid=True)))),
+        {
+            "lat": latitude,
+            "lng": longitude,
+            "radius": radius_m,
+            "excluded": excluded,
+            "lim": limit,
+            "max_age": settings.location_max_age_s,
+        },
+    ).all()
+
+
 def pickup_distance_m(db: Session, driver_id: UUID, request_id: UUID) -> int | None:
     row = db.execute(
         text(

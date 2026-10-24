@@ -10,7 +10,8 @@ const PERSISTED = new Set(["meta", "history", "passenger", "passenger-places", "
 
 export const queryClient = new QueryClient({
   // La caché debe vivir al menos lo mismo que lo guardado en IndexedDB para poder restaurarlo.
-  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true, gcTime: DAY_MS } },
+  // Con staleTime, volver a la app o cambiar de pantalla no repite consultas recién hechas.
+  defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true, staleTime: 15_000, gcTime: DAY_MS } },
 });
 
 const persister = createAsyncStoragePersister({

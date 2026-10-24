@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { MapStylePicker } from "../components/MapStylePicker.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Field, Input } from "../components/ui/input.tsx";
 import { useAuth } from "../lib/auth.tsx";
 import type { Role } from "../lib/api.ts";
+import { DEFAULT_MAP_STYLE, type MapStyle, saveMapStyle } from "../lib/mapStyle.ts";
 
 export function Register() {
   const [params] = useSearchParams();
@@ -22,6 +24,7 @@ export function Register() {
   });
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [mapStyle, setMapStyle] = useState<MapStyle["id"]>(DEFAULT_MAP_STYLE.id);
   const { register } = useAuth();
   const navigate = useNavigate();
   const referral = localStorage.getItem("ruta_referral") ?? "";
@@ -53,6 +56,7 @@ export function Register() {
     setPending(true);
     try {
       const user = await register(payload);
+      saveMapStyle(user.id, mapStyle);
       const next: Record<Role, string> = { passenger: "/pasajero", driver: "/conductor", admin: "/admin" };
       navigate(next[user.role]);
     } catch (err) {
@@ -109,6 +113,10 @@ export function Register() {
             </Field>
           </>
         )}
+        <div>
+          <MapStylePicker value={mapStyle} onChange={setMapStyle} />
+          <p className="mt-2 text-xs text-muted">Puedes cambiarlo después en tu perfil.</p>
+        </div>
         {referral && <p className="text-sm text-route">Código de referido: {referral}</p>}
         {error && <p className="text-sm text-danger" role="alert">{error}</p>}
         <Button type="submit" variant="taxi" className="w-full" disabled={pending}>

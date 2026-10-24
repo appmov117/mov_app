@@ -9,6 +9,8 @@ import { enablePush } from "../lib/push.ts";
 /** El servidor descarta conductores sin ubicación reciente; esto la mantiene viva aunque no se muevan. */
 const HEARTBEAT_MS = 30_000;
 const REPORTING = new Set(["online", "paused"]);
+/** "busy" también recibe: con pasajero a bordo puede llegarle el viaje siguiente. */
+const RECEIVING = new Set(["online", "busy"]);
 
 type Offer = { id: string; request_id: string; status: string; destination_label: string | null };
 
@@ -34,10 +36,10 @@ export function DriverBeacon() {
     queryKey: ["offers"],
     queryFn: () => api<Offer[]>("/api/v1/drivers/me/ride-offers"),
     refetchInterval: offersInterval,
-    enabled: status === "online",
+    enabled: RECEIVING.has(status),
   });
   // La caché conserva la última oferta aunque la consulta se desactive (p. ej. ya aceptada).
-  const offer = status === "online" ? offers.data?.find((item) => item.status === "pending") : undefined;
+  const offer = RECEIVING.has(status) ? offers.data?.find((item) => item.status === "pending") : undefined;
 
   useEffect(() => {
     // La pantalla del viaje mantiene su propio seguimiento para dibujar la ruta

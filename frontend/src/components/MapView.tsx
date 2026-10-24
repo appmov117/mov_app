@@ -2,6 +2,7 @@ import { Car } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import Map, { type MapMouseEvent, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useMapStyle } from "../lib/mapStyle.ts";
 
 export type Pin = { latitude: number; longitude: number };
 
@@ -48,6 +49,8 @@ export function MapView({
   onPick,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
+  const [style] = useMapStyle();
+  const standard = style.id === "standard";
   const boxRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [path, setPath] = useState("");
@@ -140,10 +143,10 @@ export function MapView({
   }, [route, fit, ready, navigate]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !standard) return;
     // Siempre de día: la interfaz es clara y un mapa nocturno en unas pantallas sí y en otras no confunde.
     mapRef.current?.getMap().setConfigProperty("basemap", "lightPreset", "day");
-  }, [ready]);
+  }, [ready, standard]);
 
   // Cámara estilo navegación: sigue al carro con rumbo
   useEffect(() => {
@@ -281,9 +284,9 @@ export function MapView({
           pitch: 0,
           bearing: 0,
         }}
-        mapStyle="mapbox://styles/mapbox/standard"
+        mapStyle={style.url}
         // Mapa plano: los edificios 3D y la cámara inclinada son lo que más carga la GPU del teléfono.
-        config={{ basemap: { show3dObjects: false } }}
+        config={standard ? { basemap: { show3dObjects: false } } : undefined}
         pitchWithRotate={false}
         maxPitch={0}
         style={{ width: "100%", height: "100%" }}

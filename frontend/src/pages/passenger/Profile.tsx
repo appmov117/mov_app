@@ -3,6 +3,7 @@ import { Clock, LogOut, Mail, MessageCircle, Phone, Wallet } from "lucide-react"
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
+import { MapStylePicker } from "../../components/MapStylePicker.tsx";
 import { Shell } from "../../components/Shell.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { LinkRow, SectionTitle } from "../../components/ui/list.tsx";
@@ -47,6 +48,8 @@ export function PassengerProfile() {
           <LinkRow to="/pasajero/historial" icon={<Clock size={18} />} label="Mis viajes" />
           <LinkRow to="/pasajero/mensajes" icon={<MessageCircle size={18} />} label="Mensajes" />
         </ul>
+
+        <MapStylePicker />
 
         <div className="mt-5 flex gap-3 rounded-2xl bg-foam p-4">
           <Wallet size={18} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />

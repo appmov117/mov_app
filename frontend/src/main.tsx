@@ -4,6 +4,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import { LiveSync } from "./components/LiveSync.tsx";
+import { UpdatePrompt } from "./components/UpdatePrompt.tsx";
 import { AuthProvider } from "./lib/auth.tsx";
 import { persistOptions, queryClient } from "./lib/queryCache.ts";
 import "./index.css";
@@ -20,6 +21,7 @@ createRoot(document.getElementById("root")!).render(
         <AuthProvider>
           <LiveSync />
           <App />
+          <UpdatePrompt />
         </AuthProvider>
       </BrowserRouter>
     </PersistQueryClientProvider>

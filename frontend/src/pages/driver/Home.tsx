@@ -22,6 +22,8 @@ type Offer = {
   pickup_distance_m: number | null;
   pickup_eta_s: number | null;
   pickup_by_road: boolean;
+  /** La recogida es después de dejar al pasajero actual; el tiempo ya incluye lo que falta. */
+  after_current_ride: boolean;
   trip_distance_m: number | null;
   estimated_fare: number | null;
   status: "pending" | "countered";
@@ -61,9 +63,10 @@ export function DriverHome() {
   const offer = offers.data?.[0];
   const online = me.data?.driver_status === "online" || me.data?.driver_status === "busy";
 
+  // Con un viaje en curso solo se queda aquí para responder la oferta del viaje siguiente.
   useEffect(() => {
-    if (active.data) navigate("/conductor/viaje");
-  }, [active.data, navigate]);
+    if (active.data && !offer) navigate("/conductor/viaje");
+  }, [active.data, offer, navigate]);
 
   useEffect(() => {
     setSeconds(offerSeconds);
@@ -115,7 +118,7 @@ export function DriverHome() {
         <div className="flex min-h-0 flex-1 flex-col bg-surface-dark text-white md:px-[max(0px,calc((100%-36rem)/2))]">
           <div className="flex items-start justify-between gap-4 px-5 pt-6">
             <div>
-              <h1 className="text-lg font-bold text-white/80">Nueva solicitud</h1>
+              <h1 className="text-lg font-bold text-white/80">{offer.after_current_ride ? "Siguiente viaje" : "Nueva solicitud"}</h1>
               <p className="mt-1 text-5xl font-extrabold tracking-tight">{pesos(offer.estimated_fare)}</p>
               <p className="mt-1 text-sm text-white/70">
                 Tarifa estimada · {km(offer.trip_distance_m)} de viaje
@@ -313,6 +316,7 @@ function pickupDetail(offer: Offer) {
   const approx = offer.pickup_by_road ? "" : "≈ ";
   const distance = offer.pickup_distance_m < 100 ? "menos de 100 m" : km(offer.pickup_distance_m);
   const minutes = offer.pickup_eta_s != null ? `${approx}${Math.max(1, Math.round(offer.pickup_eta_s / 60))} min · ` : "";
+  if (offer.after_current_ride) return `Al terminar tu viaje · ${minutes}${approx}${distance} de tu destino actual`;
   return `${minutes}${approx}${distance} de ti${offer.pickup_by_road ? " por calle" : ""}`;
 }
 

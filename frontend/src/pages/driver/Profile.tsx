@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { BadgeCheck, Clock3, CreditCard, FileCheck2, LogOut, Star, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
+import { MapStylePicker } from "../../components/MapStylePicker.tsx";
 import { Shell } from "../../components/Shell.tsx";
 import { Button } from "../../components/ui/button.tsx";
 import { LinkRow, SectionTitle } from "../../components/ui/list.tsx";
@@ -64,6 +65,8 @@ export function DriverProfile() {
           <LinkRow to="/conductor/membresia" icon={<CreditCard size={18} />} label="Tu membresía" detail="Plan y comprobantes de pago" />
           <LinkRow to="/conductor/referidos" icon={<Users size={18} />} label="Referidos" detail="Gana días de membresía invitando" />
         </ul>
+
+        <MapStylePicker />
 
         <Button className="mt-auto" variant="danger" onClick={() => logout().then(() => navigate("/"))}>
           <LogOut size={18} aria-hidden="true" /> Cerrar sesión

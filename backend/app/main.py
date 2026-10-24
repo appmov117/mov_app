@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.requests import Request
 
 from app.admin.router import router as admin_router
@@ -119,6 +120,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Ruta", version="0.1.0", lifespan=lifespan)
 app.add_middleware(RequestLogMiddleware)
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
