@@ -24,8 +24,17 @@ const zoneRadiusM = 35_000;
 
 const shortcuts: Place[] = [
   { label: "Plaza Galerías", detail: "Calle 60, Mérida", latitude: 21.0154, longitude: -89.5846, kind: "other" },
-  { label: "Aeropuerto de Mérida", detail: "Carretera a Uman", latitude: 20.937, longitude: -89.6577, kind: "other" },
 ];
+
+const HIDDEN_KEY = "ruta-hidden-suggestions";
+
+function readHidden(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
 
 export function PassengerHome() {
   const navigate = useNavigate();
@@ -245,7 +254,18 @@ export function PassengerHome() {
     { id: "paquete" as const, name: "Paquete", icon: Package, eta, price: estimate.data?.package_fare ?? 0 },
   ];
   const editingMap = placing || adjustingOrigin;
-  const favoriteList = savedPlaces.data?.length ? savedPlaces.data : shortcuts;
+  const [hidden, setHidden] = useState<string[]>(readHidden);
+  const favoriteList = savedPlaces.data?.length ? savedPlaces.data : shortcuts.filter((place) => !hidden.includes(place.label));
+
+  function hideSuggestion(label: string) {
+    const next = [...hidden, label];
+    setHidden(next);
+    try {
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(next));
+    } catch {
+      // Sin almacenamiento se oculta solo mientras la pantalla siga abierta.
+    }
+  }
 
   function savedMatch(place: Place) {
     return savedPlaces.data?.find(
@@ -419,7 +439,7 @@ export function PassengerHome() {
             )}
             {query.trim().length < 3 && (
               <p className="mt-4 text-sm font-bold text-ink">
-                {savedPlaces.data?.length ? "Tus favoritos" : "Lugares sugeridos"}
+                {savedPlaces.data?.length ? "Tus favoritos" : favoriteList.length ? "Lugares sugeridos" : ""}
               </p>
             )}
             {query.trim().length < 3 && (
@@ -436,7 +456,7 @@ export function PassengerHome() {
                       <span className="block truncate text-xs text-muted">{place.detail ?? "Lugar guardado"}</span>
                     </span>
                   </button>
-                  {place.id && (
+                  {place.id ? (
                     <button
                       type="button"
                       aria-label={`Quitar ${place.label} de favoritos`}
@@ -444,6 +464,15 @@ export function PassengerHome() {
                       onClick={() => removePlace.mutate(place.id!)}
                     >
                       <Star size={20} fill="currentColor" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-label={`Quitar ${place.label} de sugeridos`}
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-muted"
+                      onClick={() => hideSuggestion(place.label)}
+                    >
+                      <X size={18} />
                     </button>
                   )}
                   </div>

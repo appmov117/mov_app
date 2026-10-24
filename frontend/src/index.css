@@ -104,6 +104,10 @@ html {
 
 body {
   margin: 0;
+  /* Como app nativa: tocar y mantener no selecciona texto ni abre el menú de copiar. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   background: var(--color-foam);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -331,4 +335,12 @@ textarea:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
