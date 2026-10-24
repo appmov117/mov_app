@@ -38,7 +38,7 @@
   --color-surface-dark-raised: #1c252b;
 }
 
-/* Modo oscuro: sigue al sistema salvo que el usuario elija tema en su perfil (data-theme en <html>). */
+/* Modo oscuro: por elección en el perfil (data-theme en <html>) o, con "Sistema", según el teléfono. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
   --color-surface: #141a1e;

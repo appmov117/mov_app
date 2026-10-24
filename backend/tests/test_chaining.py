@@ -71,3 +71,31 @@ def test_chained_ride_starts_after_current_one_and_only_one_waits(client):
     assert done.status_code == 200, done.text
     assert client.get("/api/v1/drivers/me/active", headers=driver).json()["id"] == next_id
     assert client.get("/api/v1/drivers/me", headers=driver).json()["driver_status"] == "busy"
+
+
+def test_driver_is_available_again_after_completing_or_cancelling(client):
+    driver, ride_id = ride_in_progress(client, NEAR_END)
+    done = client.post(f"/api/v1/rides/{ride_id}/complete", headers=driver, json={"fare_amount": 40, "payment_method": "cash"})
+    assert done.status_code == 200, done.text
+    assert client.get("/api/v1/drivers/me", headers=driver).json()["driver_status"] == "online"
+
+    request(client, passenger(client, "9995000005", "cancela@ruta.local"), START, NEAR_END)
+    second = client.post(f"/api/v1/ride-offers/{offers(client, driver)[0]['id']}/accept", headers=driver).json()["id"]
+    assert client.post(f"/api/v1/rides/{second}/cancel", headers=driver).status_code == 200
+    assert client.get("/api/v1/drivers/me", headers=driver).json()["driver_status"] == "online"
+
+
+def test_tick_releases_busy_driver_without_active_ride(client):
+    from app.db.session import SessionLocal
+    from app.drivers.models import Driver
+    from app.rides.service import tick
+
+    admin = make_admin(client)
+    driver = ready_driver(client, "9995000006", "atorado@ruta.local", START["latitude"], START["longitude"], admin)
+    driver_id = client.get("/api/v1/drivers/me", headers=driver).json()["id"]
+    db = SessionLocal()
+    db.get(Driver, driver_id).driver_status = "busy"
+    db.commit()
+    tick(db)
+    db.close()
+    assert client.get("/api/v1/drivers/me", headers=driver).json()["driver_status"] == "online"

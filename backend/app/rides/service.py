@@ -761,6 +761,8 @@ def complete_ride(db: Session, user: User, ride_id: UUID, fare_amount, payment_m
         ride.duration_s = max(int((now - ride.started_at).total_seconds()), 1)
     if driver:
         driver.completed_rides += 1
+        # La sesión no hace autoflush: sin esto la consulta aún vería este viaje como activo.
+        db.flush()
         if _active_ride_for_driver(db, driver.id) is None:
             _release_driver(db, driver)
     if passenger:
@@ -783,6 +785,7 @@ def cancel_ride(db: Session, user: User, ride_id: UUID) -> dict:
     ride.status = "cancelled"
     if driver and driver.user_id == user.id:
         driver.cancelled_rides += 1
+    db.flush()
     if driver and driver.driver_status == "busy" and _active_ride_for_driver(db, driver.id) is None:
         _release_driver(db, driver)
     _event(db, ride.id, "ride_cancelled", {"by": user.role})
@@ -973,6 +976,15 @@ def tick(db: Session) -> None:
     for driver in paused:
         driver.driver_status = "online"
         driver.paused_until = None
+    # Conductores marcados como ocupados sin ningún viaje activo (p. ej., por un error previo) vuelven a estar disponibles.
+    stuck = db.scalars(
+        select(Driver).where(
+            Driver.driver_status == "busy",
+            ~select(Ride.id).where(Ride.driver_id == Driver.id, Ride.status.in_(ACTIVE_RIDE)).exists(),
+        )
+    ).all()
+    for driver in stuck:
+        _release_driver(db, driver)
     open_ids = list(db.scalars(select(RideRequest.id).where(RideRequest.status.in_(OPEN_REQUEST))).all())
     for request_id in open_ids:
         advance_request(db, request_id)

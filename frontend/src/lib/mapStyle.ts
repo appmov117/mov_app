@@ -16,7 +16,7 @@ export const MAP_STYLES = [
     label: "Calles",
     detail: "Más colores y nombres; gasta un poco más",
     url: "mapbox://styles/mapbox/streets-v12",
-    darkUrl: "mapbox://styles/mapbox/navigation-night-v1",
+    darkUrl: "mapbox://styles/mapbox/dark-v11",
   },
 ] as const;
 

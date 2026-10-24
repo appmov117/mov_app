@@ -40,7 +40,7 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
         [Math.min(...lngs), Math.min(...lats)],
         [Math.max(...lngs), Math.max(...lats)],
       ],
-      { padding, duration: 600, maxZoom: 15.5 },
+      { padding, duration: 600, maxZoom: 17 },
     );
   }
 
@@ -48,7 +48,7 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
   useEffect(frame, [fitKey]);
 
   useEffect(() => {
-    if (focus) ref.current?.flyTo({ center: [focus.longitude, focus.latitude], zoom: 15.5, duration: 700 });
+    if (focus) ref.current?.flyTo({ center: [focus.longitude, focus.latitude], zoom: 16.5, duration: 700 });
   }, [focus?.latitude, focus?.longitude]);
 
   if (!token) {
@@ -60,6 +60,7 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
       mapboxAccessToken={token}
       initialViewState={{ latitude: MERIDA.latitude, longitude: MERIDA.longitude, zoom }}
       mapStyle={mapUrl}
+      maxZoom={20}
       style={{ width: "100%", height: "100%" }}
       maxPitch={0}
       pitchWithRotate={false}

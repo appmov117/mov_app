@@ -236,6 +236,7 @@ export function DriverRide() {
           origin={pickingUp ? current.origin : going ? undefined : current.origin}
           destination={navTarget}
           driver={me}
+          driverIsMe
           heading={heading}
           stops={going ? current.stops : []}
           route={activeRoute}

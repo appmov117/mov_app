@@ -13,6 +13,20 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
+/** La app que sabe mostrar el aviso "Actualizar" deja esta marca (ver UpdatePrompt). */
+const FLAGS = "ruta-flags";
+const PROMPT_FLAG = "/__update-prompt";
+
+// Una app abierta sin el aviso nunca pediría la versión nueva: en ese caso se instala sola.
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(FLAGS)
+      .then((flags) => flags.match(PROMPT_FLAG))
+      .then((flag) => (flag ? undefined : self.skipWaiting())),
+  );
+});
+
 self.addEventListener("push", (event) => {
   const payload: PushPayload = event.data?.json() ?? { title: "Ruta", body: "" };
   event.waitUntil(

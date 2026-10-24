@@ -12,6 +12,8 @@ export function UpdatePrompt() {
   } = useRegisterSW({
     onRegisteredSW(_url, registration) {
       if (!registration) return;
+      // Avisa al service worker que esta versión muestra el botón; sin la marca se actualizaría solo.
+      void caches.open("ruta-flags").then((flags) => flags.put("/__update-prompt", new Response("1"))).catch(() => undefined);
       const check = () => {
         if (navigator.onLine && document.visibilityState === "visible") registration.update().catch(() => undefined);
       };

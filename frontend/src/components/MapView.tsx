@@ -2,6 +2,7 @@ import { Car } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import Map, { type MapMouseEvent, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { distanceM } from "../lib/guidance.ts";
 import { useMapUrl } from "../lib/mapStyle.ts";
 
 export type Pin = { latitude: number; longitude: number };
@@ -28,6 +29,10 @@ type Props = {
   recenterToken?: number;
   onUserPan?: () => void;
   onPick?: (pin: Pin) => void;
+  /** El conductor es quien mira el mapa: se dibuja como punto azul con su rumbo, no como carro. */
+  driverIsMe?: boolean;
+  /** Ubicación de quien mira el mapa (punto azul sin rumbo). */
+  me?: Pin | null;
 };
 
 export function MapView({
@@ -47,9 +52,13 @@ export function MapView({
   recenterToken = 0,
   onUserPan,
   onPick,
+  driverIsMe = false,
+  me = null,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const mapUrl = useMapUrl();
+  // Sin destino, el punto azul ya marca dónde estás: el pin A encima solo estorba.
+  const originIsMe = Boolean(!destination && me && origin && distanceM(origin, me) < 25);
   const boxRef = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
   const [path, setPath] = useState("");
@@ -57,12 +66,16 @@ export function MapView({
     origin: { x: number; y: number } | null;
     destination: { x: number; y: number } | null;
     driver: { x: number; y: number } | null;
+    me: { x: number; y: number } | null;
     stops: { x: number; y: number }[];
+    bearing: number;
   }>({
     origin: null,
     destination: null,
     driver: null,
+    me: null,
     stops: [],
+    bearing: 0,
   });
   const [progress, setProgress] = useState(1);
   const drawnRoute = useRef("");
@@ -93,7 +106,7 @@ export function MapView({
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ],
-        { padding: padRef.current, duration: 400, maxZoom: 15.5 },
+        { padding: padRef.current, duration: 400, maxZoom: 17 },
       );
     };
     apply();
@@ -113,7 +126,7 @@ export function MapView({
   // Espera a que el mapa cargue: un flyTo previo se pierde y la cámara queda en el centro inicial.
   useEffect(() => {
     if (!ready || !focus || (routeRef.current && routeRef.current.length > 1)) return;
-    mapRef.current?.flyTo({ center: [focus.longitude, focus.latitude], zoom: 15, duration: 700 });
+    mapRef.current?.flyTo({ center: [focus.longitude, focus.latitude], zoom: 16.5, duration: 700 });
   }, [focus, ready]);
 
   useEffect(() => {
@@ -134,7 +147,7 @@ export function MapView({
     const bearing = heading != null && !Number.isNaN(heading) ? heading : map.getBearing();
     map.easeTo({
       center: [driver.longitude, driver.latitude],
-      zoom: Math.max(map.getZoom(), 16.2),
+      zoom: Math.max(map.getZoom(), NAV_ZOOM),
       bearing,
       duration: 350,
       padding: typeof fitPadding === "number" ? { top: 120, bottom: fitPadding, left: 40, right: 40 } : fitPadding,
@@ -156,7 +169,7 @@ export function MapView({
     const map = mapRef.current?.getMap();
     if (!map || !ready) {
       setPath("");
-      setMarks({ origin: null, destination: null, driver: null, stops: [] });
+      setMarks({ origin: null, destination: null, driver: null, me: null, stops: [], bearing: 0 });
       return;
     }
     const place = (pin: Pin | null | undefined) => {
@@ -181,7 +194,9 @@ export function MapView({
         origin: place(origin),
         destination: place(destination),
         driver: place(driver),
+        me: place(me),
         stops: (stops ?? []).map((stop) => place(stop)).filter((value): value is { x: number; y: number } => Boolean(value)),
+        bearing: map.getBearing(),
       });
     };
     paint();
@@ -253,11 +268,12 @@ export function MapView({
         initialViewState={{
           latitude: center.latitude,
           longitude: center.longitude,
-          zoom: navigate ? 16.2 : 14.2,
+          zoom: navigate ? NAV_ZOOM : 15,
           pitch: 0,
           bearing: 0,
         }}
         mapStyle={mapUrl}
+        maxZoom={20}
         pitchWithRotate={false}
         maxPitch={0}
         style={{ width: "100%", height: "100%" }}
@@ -289,7 +305,7 @@ export function MapView({
         </svg>
       )}
       <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden="true">
-        {marks.origin && !(navigate && driver) && (
+        {marks.origin && !(navigate && driver) && !originIsMe && (
           <MapPinMarker point={marks.origin} color={destination && !pulse ? "#0B6E7F" : "#2563EB"} pulse={pulse || !destination} label="A" />
         )}
         {marks.origin && navigate && driver && <MapPinMarker point={marks.origin} color="#0B6E7F" label="A" />}
@@ -297,7 +313,13 @@ export function MapView({
           <MapPinMarker key={`${point.x}-${point.y}-${index}`} point={point} color="#F59E0B" label={String(index + 1)} />
         ))}
         {marks.destination && <FlagMarker point={marks.destination} />}
-        {marks.driver && <CarMarker point={marks.driver} heading={heading} />}
+        {marks.me && !driverIsMe && <LocationDot point={marks.me} heading={null} />}
+        {marks.driver &&
+          (driverIsMe ? (
+            <LocationDot point={marks.driver} heading={onScreen(heading, marks.bearing)} />
+          ) : (
+            <CarMarker point={marks.driver} heading={onScreen(heading, marks.bearing)} />
+          ))}
       </div>
     </div>
   );
@@ -388,6 +410,40 @@ function arrowsAlong(path: string, width: number, height: number, spacing = 70) 
  * Marcador del vehículo: un auto en círculo verde, siempre derecho para que se reconozca,
  * con una flecha alrededor que apunta hacia donde avanza (cuando el GPS da el rumbo).
  */
+/** Zoom al navegar: deja leer nombres de calles y ver el siguiente giro con calma. */
+const NAV_ZOOM = 17.5;
+
+/** Rumbo relativo a la pantalla: el mapa puede estar girado al navegar. */
+function onScreen(heading: number | null, bearing: number) {
+  return heading != null && !Number.isNaN(heading) ? heading - bearing : null;
+}
+
+/** Punto azul de "estás aquí", con un cono hacia donde te mueves cuando hay rumbo. */
+function LocationDot({ point, heading }: { point: Point; heading: number | null }) {
+  return (
+    <span className="absolute h-0 w-0" style={{ left: point.x, top: point.y }}>
+      {heading != null && (
+        <span
+          className="absolute left-0 top-0 h-[72px] w-[72px]"
+          style={{
+            transform: `translate(-50%, -50%) rotate(${heading}deg)`,
+            background: "conic-gradient(from -30deg, rgba(66,133,244,0.55) 0deg 60deg, transparent 60deg)",
+            borderRadius: "50%",
+            maskImage: "radial-gradient(circle, #000 20%, transparent 70%)",
+            WebkitMaskImage: "radial-gradient(circle, #000 20%, transparent 70%)",
+          }}
+          aria-hidden="true"
+        />
+      )}
+      <span
+        className="absolute left-0 top-0 h-[22px] w-[22px] rounded-full border-[4px] border-white bg-[#4285F4] shadow-[0_1px_6px_rgba(0,0,0,0.35)]"
+        style={{ transform: "translate(-50%, -50%)" }}
+        aria-label="Tu ubicación"
+      />
+    </span>
+  );
+}
+
 function CarMarker({ point, heading }: { point: Point; heading: number | null }) {
   return (
     <span className="absolute h-[52px] w-[52px]" style={{ left: point.x, top: point.y, transform: "translate(-50%, -50%)" }}>

@@ -230,7 +230,7 @@ export function DriverHome() {
     <Shell full>
       <div className="relative min-h-0 flex-1">
         {active.isSuccess && !active.data ? (
-          <MapView center={here ?? center} driver={here} focus={focus} />
+          <MapView center={here ?? center} driver={here} focus={focus} driverIsMe />
         ) : (
           <div className="absolute inset-0 bg-foam" aria-hidden="true" />
         )}

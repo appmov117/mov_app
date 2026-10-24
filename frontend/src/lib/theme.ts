@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
 
 export const THEMES = [
-  { id: "system", label: "Sistema", detail: "Sigue el modo claro u oscuro del teléfono" },
   { id: "light", label: "Claro", detail: "Siempre claro" },
   { id: "dark", label: "Oscuro", detail: "Siempre oscuro; cansa menos la vista de noche" },
+  { id: "system", label: "Sistema", detail: "Sigue el modo claro u oscuro del teléfono" },
 ] as const;
 
 export type Theme = (typeof THEMES)[number]["id"];
@@ -15,9 +15,9 @@ const listeners = new Set<() => void>();
 function readTheme(): Theme {
   try {
     const saved = localStorage.getItem(KEY);
-    return THEMES.find((theme) => theme.id === saved)?.id ?? "system";
+    return THEMES.find((theme) => theme.id === saved)?.id ?? "light";
   } catch {
-    return "system";
+    return "light";
   }
 }
 

@@ -10,6 +10,7 @@ import { pesos } from "../../lib/format.ts";
 import { enablePush } from "../../lib/push.ts";
 import { useAnchoredPin } from "../../lib/routeLeg.ts";
 import { PANEL_OFFSET, useWide } from "../../lib/useWide.ts";
+import { setPosition, usePosition } from "../../lib/position.ts";
 
 type Meta = { zone: Pin; zone_name: string };
 type Place = { label: string; latitude: number; longitude: number; kind?: string; id?: string; detail?: string };
@@ -31,6 +32,7 @@ export function PassengerHome() {
   const location = useLocation();
   const wide = useWide();
   const queryClient = useQueryClient();
+  const gps = usePosition();
   const meta = useQuery({ queryKey: ["meta"], queryFn: () => api<Meta>("/api/v1/meta") });
   const savedPlaces = useQuery({
     queryKey: ["passenger-places"],
@@ -62,6 +64,7 @@ export function PassengerHome() {
 
   function place(position: GeolocationPosition, center: boolean) {
     const pin = { latitude: position.coords.latitude, longitude: position.coords.longitude };
+    setPosition(position);
     located.current = true;
     setLocationError(null);
     setOrigin(pin);
@@ -265,6 +268,7 @@ export function PassengerHome() {
             focus={focus}
             fit={!editingMap && Boolean(destination)}
             fitPadding={wide ? { top: 48, bottom: 48, left: PANEL_OFFSET, right: 48 } : 48}
+            me={gps}
             onPick={(pin) => {
               if (placing) addDraft(pin);
               if (adjustingOrigin) setDraftOrigin(pin);
