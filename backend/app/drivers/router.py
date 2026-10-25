@@ -15,6 +15,7 @@ from app.drivers.service import (
     statistics,
     update_profile,
 )
+from app.drivers.work_zone import MAX_RADIUS_M, MIN_RADIUS_M, get_zone, save_zone, set_active
 from app.rides.service import active_for_driver, history_for_driver, list_offers
 from app.users.models import User
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -26,6 +27,17 @@ router = APIRouter(prefix="/drivers/me", tags=["drivers"])
 
 class NameIn(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=80)
+
+
+class WorkZoneIn(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    radius_m: int = Field(ge=MIN_RADIUS_M, le=MAX_RADIUS_M)
+    active: bool = True
+
+
+class ActiveIn(BaseModel):
+    active: bool
 
 
 class PauseIn(BaseModel):
@@ -109,3 +121,18 @@ async def upload_document(
 
 
 _ = UUID
+
+
+@router.get("/work-zone")
+def work_zone(user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return get_zone(db, user)
+
+
+@router.put("/work-zone")
+def update_work_zone(data: WorkZoneIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return save_zone(db, user, data.latitude, data.longitude, data.radius_m, data.active)
+
+
+@router.patch("/work-zone")
+def toggle_work_zone(data: ActiveIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return set_active(db, user, data.active)

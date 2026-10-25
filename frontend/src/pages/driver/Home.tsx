@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Flame, LocateFixed } from "lucide-react";
+import { Flame, LocateFixed, Target } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
@@ -10,6 +10,7 @@ import { api } from "../../lib/api.ts";
 import { km, pesos } from "../../lib/format.ts";
 import { useLiveInterval } from "../../lib/live.ts";
 import { locateOnce, usePosition } from "../../lib/position.ts";
+import type { WorkZone } from "./WorkZone.tsx";
 
 type Offer = {
   id: string;
@@ -49,6 +50,7 @@ export function DriverHome() {
   const offersInterval = useLiveInterval(3000);
   const me = useQuery({ queryKey: ["driver"], queryFn: () => api<Me>("/api/v1/drivers/me"), refetchInterval: statusInterval });
   const offers = useQuery({ queryKey: ["offers"], queryFn: () => api<Offer[]>("/api/v1/drivers/me/ride-offers"), refetchInterval: offersInterval });
+  const zone = useQuery({ queryKey: ["work-zone"], queryFn: () => api<WorkZone | null>("/api/v1/drivers/me/work-zone") });
   const membership = useQuery({ queryKey: ["membership"], queryFn: () => api<Membership>("/api/v1/drivers/me/membership") });
   const active = useQuery({ queryKey: ["driver-active"], queryFn: () => api<{ id: string } | null>("/api/v1/drivers/me/active"), refetchInterval: offersInterval });
   const [seconds, setSeconds] = useState(offerSeconds);
@@ -321,12 +323,15 @@ export function DriverHome() {
           <LocationNotice />
           {online && <AlertsNotice />}
         </div>
-        <Link
-          to="/conductor/demanda"
-          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-3 text-sm font-bold shadow-lg"
-        >
-          <Flame size={17} className="text-[#ea580c]" aria-hidden="true" /> Ver zonas con demanda
-        </Link>
+        <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+          <Link to="/conductor/demanda" className="flex items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-3 text-sm font-bold shadow-lg">
+            <Flame size={17} className="text-[#ea580c]" aria-hidden="true" /> Zonas con demanda
+          </Link>
+          <Link to="/conductor/zona" className="flex items-center gap-2 whitespace-nowrap rounded-full bg-surface px-4 py-3 text-sm font-bold shadow-lg">
+            <Target size={17} className="text-brand-strong" aria-hidden="true" /> Mi zona
+            {zone.data?.active && <span className="h-2 w-2 rounded-full bg-ok" aria-label="activa" />}
+          </Link>
+        </div>
       </div>
     </Shell>
   );

@@ -18,6 +18,8 @@ type Props = {
   padding?: { top: number; bottom: number; left: number; right: number };
   /** Acercamiento máximo al encuadrar: más bajo deja ver la ciudad aunque los puntos estén juntos. */
   maxFitZoom?: number;
+  /** Centro de la vista mientras el mapa se mueve, para elegir un punto arrastrando. */
+  onMove?: (center: Pin) => void;
 };
 
 /** Mapa plano para datos (panel y zonas de demanda): estilo claro, sin 3D, con controles de zoom. */
@@ -29,6 +31,7 @@ export function FlatMap({
   zoom = 12.5,
   padding = { top: 60, bottom: 60, left: 60, right: 60 },
   maxFitZoom = 17,
+  onMove,
 }: Props) {
   const ref = useRef<MapRef>(null);
   const mapStyle = useMapStyleProps();
@@ -81,6 +84,7 @@ export function FlatMap({
       pitchWithRotate={false}
       dragRotate={false}
       attributionControl={false}
+      onMove={onMove && ((event) => onMove({ latitude: event.viewState.latitude, longitude: event.viewState.longitude }))}
       onLoad={(event) => {
         recovery.watch(event.target);
         frame();

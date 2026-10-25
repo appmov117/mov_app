@@ -333,12 +333,13 @@ def _open_next_wave(db: Session, request: RideRequest) -> None:
         _offered_driver_ids(db, request.id),
         _favorite_ids(db, request.passenger_id),
         request.service,
+        coords["destination"] or origin,
     )
     legs = pickup_legs(origin, pool)
     road = dict(zip((candidate.id for candidate in pool), legs, strict=True)) if legs else {}
     durations = [leg.seconds for leg in legs] if legs else None
     finishing = finishing_candidates(
-        db, origin, spec["radius"], _offered_driver_ids(db, request.id), request.service
+        db, origin, spec["radius"], _offered_driver_ids(db, request.id), request.service, coords["destination"] or origin
     )
     if finishing:
         # Quien está por terminar compite por tiempo total de llegada; sin Matrix API se estima en línea recta.
@@ -477,11 +478,20 @@ def nearby_drivers(db: Session, user: User) -> list[dict]:
     """
     passenger = passenger_for_user(db, user)
     request = _open_request(db, passenger.id)
-    origin = repository.request_coords(db, request.id)["origin"] if request else None
+    coords = repository.request_coords(db, request.id) if request else None
+    origin = coords["origin"] if coords else None
     if origin is None:
         return []
     pool = repository.find_candidates(
-        db, origin["latitude"], origin["longitude"], NEARBY_RADIUS_M, NEARBY_LIMIT, [], [], request.service
+        db,
+        origin["latitude"],
+        origin["longitude"],
+        NEARBY_RADIUS_M,
+        NEARBY_LIMIT,
+        [],
+        [],
+        request.service,
+        coords["destination"] or origin,
     )
     return [{"latitude": round(c.latitude, 3), "longitude": round(c.longitude, 3)} for c in pool]
 

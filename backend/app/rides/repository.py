@@ -15,6 +15,23 @@ VEHICLE_KIND = """COALESCE(
 )"""
 
 
+# Zona de trabajo: dentro de ella solo cuentan viajes que empiezan ahí; fuera, los que dejan al
+# conductor más cerca de su zona que donde está ahora. {pos} es la posición del conductor.
+WORK_ZONE = """(
+    NOT d.work_zone_active
+    OR d.work_zone_center IS NULL
+    OR (
+        ST_DWithin({pos}, d.work_zone_center, d.work_zone_radius_m)
+        AND ST_DWithin(ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, d.work_zone_center, d.work_zone_radius_m)
+    )
+    OR (
+        NOT ST_DWithin({pos}, d.work_zone_center, d.work_zone_radius_m)
+        AND ST_Distance(ST_SetSRID(ST_MakePoint(:dest_lng, :dest_lat), 4326)::geography, d.work_zone_center)
+            < ST_Distance({pos}, d.work_zone_center)
+    )
+)"""
+
+
 def insert_request(db: Session, params: dict) -> None:
     db.execute(
         text(
@@ -105,10 +122,12 @@ def find_candidates(
     excluded: list[UUID],
     favorites: list[UUID],
     service: str,
+    destination: dict,
 ) -> list[Candidate]:
     """Conductores disponibles dentro del radio: favoritos primero y luego por distancia en línea recta.
 
     Solo entran los que tienen el vehículo del servicio pedido; un paquete lo lleva auto o moto.
+    Quien tiene zona de trabajo activa solo entra si el viaje encaja con ella (ver WORK_ZONE).
     """
     if not excluded:
         excluded = [UUID("00000000-0000-0000-0000-000000000000")]
@@ -147,6 +166,7 @@ def find_candidates(
                   )
               AND NOT (d.id = ANY(:excluded))
               AND (:service = 'paquete' OR {VEHICLE_KIND} = :service)
+              AND {WORK_ZONE.format(pos="dl.location")}
             ORDER BY
               CASE WHEN d.id = ANY(:favorites) THEN 0 ELSE 1 END,
               ST_Distance(dl.location, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
@@ -163,6 +183,8 @@ def find_candidates(
             "excluded": excluded,
             "favorites": favorites,
             "service": service,
+            "dest_lat": destination["latitude"],
+            "dest_lng": destination["longitude"],
             "lim": limit,
             "max_age": settings.location_max_age_s,
             "grace": settings.document_grace_days,
@@ -182,6 +204,7 @@ def find_finishing(
     limit: int,
     excluded: list[UUID],
     service: str,
+    destination: dict,
 ) -> list:
     """Conductores con pasajero a bordo cuyo destino queda dentro del radio de la nueva recogida.
 
@@ -220,6 +243,7 @@ def find_finishing(
                   )
               AND NOT (d.id = ANY(:excluded))
               AND (:service = 'paquete' OR {VEHICLE_KIND} = :service)
+              AND {WORK_ZONE.format(pos="r.destination")}
             ORDER BY end_to_pickup_m
             LIMIT :lim
             """
@@ -230,6 +254,8 @@ def find_finishing(
             "radius": radius_m,
             "excluded": excluded,
             "service": service,
+            "dest_lat": destination["latitude"],
+            "dest_lng": destination["longitude"],
             "lim": limit,
             "max_age": settings.location_max_age_s,
             "grace": settings.document_grace_days,
