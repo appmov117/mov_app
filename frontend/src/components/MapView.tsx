@@ -299,6 +299,8 @@ export function MapView({
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
         interactive={interactive}
+        // Solo de vista no se comparte: un mapa reutilizado conserva si se puede mover.
+        reuseMaps={recovery.reuse && interactive}
         onLoad={(event) => {
           recovery.watch(event.target);
           tuneStyle(event.target, mapStyle.url);

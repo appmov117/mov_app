@@ -6,6 +6,13 @@ const RESTORE_WAIT_MS = 800;
 /** Si el estilo no termina de cargar en este tiempo (red cortada, descarga suspendida), se reintenta. */
 const LOAD_TIMEOUT_MS = 12_000;
 
+/**
+ * Las pantallas reutilizan el mapa ya cargado al cambiar de pestaña (reuseMaps), sin volver a
+ * crearlo ni descargar el estilo. Si alguno se daña, el mapa guardado podría ser ese: desde ahí
+ * cada pantalla crea el suyo hasta que la app se recargue.
+ */
+let reuseBroken = false;
+
 /** True si el navegador ya liberó la memoria gráfica del mapa, aunque no lo haya avisado. */
 function contextLost(map: MapboxMap) {
   const canvas = map.getCanvas();
@@ -23,7 +30,8 @@ function contextLost(map: MapboxMap) {
  * tampoco llega a dibujarse.
  *
  * Returns:
- *   `key` para el componente Map (cambia al recrearlo) y `watch`, que se llama en su onLoad.
+ *   `key` para el componente Map (cambia al recrearlo), `watch`, que se llama en su onLoad, y
+ *   `reuse`, para su prop reuseMaps.
  */
 export function useMapRecovery() {
   const [key, setKey] = useState(0);
@@ -33,24 +41,37 @@ export function useMapRecovery() {
   const loaded = useRef(false);
 
   const recreate = useCallback((delay: number) => {
+    reuseBroken = true;
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setKey((value) => value + 1), delay);
   }, []);
 
+  const detach = useRef<() => void>(() => undefined);
+
   const watch = useCallback(
     (map: MapboxMap) => {
+      detach.current();
       current.current = map;
       lost.current = false;
       loaded.current = true;
-      map.on("webglcontextlost", () => {
+      const onLost = () => {
         lost.current = true;
         if (document.visibilityState === "visible") recreate(RESTORE_WAIT_MS);
-      });
-      map.on("webglcontextrestored", () => {
+      };
+      const onRestored = () => {
         lost.current = false;
         window.clearTimeout(timer.current);
         map.triggerRepaint();
-      });
+      };
+      map.on("webglcontextlost", onLost);
+      map.on("webglcontextrestored", onRestored);
+      // Un mapa reutilizado pasa a otra pantalla: sus avisos no deben llegar a esta.
+      detach.current = () => {
+        map.off("webglcontextlost", onLost);
+        map.off("webglcontextrestored", onRestored);
+      };
+      // Un mapa reutilizado que se dañó mientras estaba guardado se reemplaza de inmediato.
+      if (contextLost(map)) recreate(0);
     },
     [recreate],
   );
@@ -62,7 +83,11 @@ export function useMapRecovery() {
     const watchdog = window.setTimeout(() => {
       if (!loaded.current && document.visibilityState === "visible") recreate(0);
     }, LOAD_TIMEOUT_MS);
-    return () => window.clearTimeout(watchdog);
+    return () => {
+      window.clearTimeout(watchdog);
+      detach.current();
+      detach.current = () => undefined;
+    };
   }, [key, recreate]);
 
   useEffect(() => {
@@ -92,5 +117,6 @@ export function useMapRecovery() {
     };
   }, [recreate]);
 
-  return { key, watch };
+  // Un mapa recreado por una falla siempre es nuevo; los demás toman el que dejó la pantalla anterior.
+  return { key, watch, reuse: key === 0 && !reuseBroken };
 }

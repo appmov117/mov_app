@@ -72,6 +72,7 @@ export function FlatMap({
   return (
     <Map
       key={recovery.key}
+      reuseMaps={recovery.reuse}
       ref={ref}
       mapboxAccessToken={token}
       initialViewState={{ latitude: MERIDA.latitude, longitude: MERIDA.longitude, zoom }}
