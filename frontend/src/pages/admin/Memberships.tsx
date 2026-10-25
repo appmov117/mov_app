@@ -35,7 +35,7 @@ export function Memberships() {
   const data = overview.data;
 
   return (
-    <Page title="Membresías y pagos" description="Cada conductor paga $200 MXN por 30 días. Aprueba aquí los pagos para activar su membresía; el conductor recibe un aviso.">
+    <Page title="Membresías y pagos" description="Los conductores reciben 6 meses gratis al registrarse; después pagan $200 MXN por 30 días. Aprueba aquí los pagos para activar su membresía; el conductor recibe un aviso.">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Kpi label="Vigentes" value={String(data?.active ?? "—")} />
         <Kpi label="Vencen en 3 días o menos" value={String(data?.expiring ?? "—")} tone={data?.expiring ? "warn" : undefined} />

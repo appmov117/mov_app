@@ -8,6 +8,7 @@ from app.core.errors import AppError
 from app.core.support import audit, money, track, utcnow
 from app.core.ws import publish
 from app.drivers.models import Driver
+from app.drivers.onboarding import can_operate, review_documents
 from app.notifications.service import notify
 from app.passengers.models import FavoriteDriver, Passenger
 from app.ratings.models import Rating
@@ -89,7 +90,7 @@ def _event(db: Session, ride_id: UUID, event_type: str, metadata: dict | None = 
 def _release_driver(db: Session, driver: Driver) -> None:
     from app.memberships.service import active_membership
 
-    if active_membership(db, driver.id) and driver.verification_status == "approved":
+    if active_membership(db, driver.id) and can_operate(driver):
         driver.driver_status = "online"
     else:
         driver.driver_status = "offline"
@@ -1009,4 +1010,5 @@ def tick(db: Session) -> None:
                 "Renueva para seguir recibiendo viajes",
                 {"expires_at": current.expires_at.isoformat()},
             )
+    review_documents(db)
     db.commit()

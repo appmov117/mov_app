@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     public_app_url: str = "http://localhost:5173"
     membership_price: Decimal = Decimal("200")
     membership_days: int = 30
+    free_membership_days: int = 180
+    document_grace_days: int = 15
     membership_payment_url: str = "https://www.mercadopago.com.mx"
     base_fare: Decimal = Decimal("20")
     per_km: Decimal = Decimal("6")

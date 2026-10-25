@@ -12,6 +12,7 @@ from app.core.security import (
 )
 from app.core.support import audit, track, utcnow
 from app.drivers.models import Driver
+from app.drivers.onboarding import welcome
 from app.passengers.models import Passenger
 from app.referrals.service import attach_referral, ensure_code
 from app.users.avatar import avatar_url
@@ -118,6 +119,7 @@ def register(db: Session, data, *, allow_admin: bool = False) -> dict:
                 active=True,
             )
         )
+        welcome(db, driver)
         ensure_code(db, driver.id)
         track(db, user.id, "driver_registered")
     attach_referral(db, data.referral_code, user.id)

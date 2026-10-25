@@ -7,6 +7,7 @@ from app.core.app_settings import half_payment_url, payment_url
 from app.core.errors import AppError
 from app.core.support import days_remaining, utcnow
 from app.drivers.models import Driver
+from app.drivers.onboarding import can_operate
 from app.memberships.models import Membership, MembershipPayment
 from app.referrals.models import DriverReward
 from sqlalchemy import func, select
@@ -108,8 +109,8 @@ def membership_view(db: Session, driver_id: UUID) -> dict:
 
 
 def require_active_membership(db: Session, driver: Driver) -> Membership:
-    if driver.verification_status != "approved":
-        raise AppError(403, "Tu cuenta todavía está en revisión")
+    if not can_operate(driver):
+        raise AppError(403, "Terminó tu plazo de documentos; podrás conectarte cuando aprobemos tu cuenta")
     current = active_membership(db, driver.id)
     if current is None:
         raise AppError(403, "Necesitas una membresía vigente para conectarte")

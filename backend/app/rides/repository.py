@@ -126,7 +126,7 @@ def find_candidates(
             JOIN users u ON u.id = d.user_id
             JOIN driver_locations dl ON dl.driver_id = d.id
             WHERE d.driver_status = 'online'
-              AND d.verification_status = 'approved'
+              AND (d.verification_status = 'approved' OR d.created_at > NOW() - make_interval(days => :grace))
               AND u.status = 'active'
               AND dl.updated_at > NOW() - make_interval(secs => :max_age)
               AND ST_DWithin(
@@ -165,6 +165,7 @@ def find_candidates(
             "service": service,
             "lim": limit,
             "max_age": settings.location_max_age_s,
+            "grace": settings.document_grace_days,
         },
     ).all()
     return [
@@ -204,7 +205,7 @@ def find_finishing(
             JOIN rides r ON r.driver_id = d.id AND r.status = 'in_progress'
             JOIN ride_requests rr ON rr.id = r.ride_request_id
             WHERE d.driver_status = 'busy'
-              AND d.verification_status = 'approved'
+              AND (d.verification_status = 'approved' OR d.created_at > NOW() - make_interval(days => :grace))
               AND u.status = 'active'
               AND dl.updated_at > NOW() - make_interval(secs => :max_age)
               AND r.current_stop_index >= jsonb_array_length(COALESCE(rr.stops, '[]'::jsonb))
@@ -231,6 +232,7 @@ def find_finishing(
             "service": service,
             "lim": limit,
             "max_age": settings.location_max_age_s,
+            "grace": settings.document_grace_days,
         },
     ).all()
 

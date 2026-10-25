@@ -7,7 +7,7 @@ from app.db.session import SessionLocal
 from app.rides.pricing import fare
 from app.rides.service import accept_offer
 from app.users.models import User
-from sqlalchemy import select
+from sqlalchemy import select, text
 from tests.conftest import login, make_admin, ready_driver, register
 
 
@@ -39,6 +39,12 @@ def test_expired_membership_cannot_go_online_or_receive_offers(client):
     expired = login(client, "vencido@ruta.local")
     driver_id = client.get("/api/v1/drivers/me", headers=expired).json()["id"]
     client.post(f"/api/v1/admin/drivers/{driver_id}/activate", headers=admin)
+    db = SessionLocal()
+    db.execute(
+        text("UPDATE memberships SET expires_at = NOW() - INTERVAL '1 day' WHERE driver_id = :id"), {"id": driver_id}
+    )
+    db.commit()
+    db.close()
     client.put(
         "/api/v1/drivers/me/location",
         headers=expired,

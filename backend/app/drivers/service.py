@@ -7,6 +7,7 @@ from app.core import storage
 from app.core.errors import AppError
 from app.core.support import money, track, utcnow
 from app.drivers.models import Driver, DriverDocument, DriverSession
+from app.drivers.onboarding import DOC_KINDS
 from app.memberships.service import require_active_membership
 from app.rides import repository
 from app.rides.models import Ride
@@ -14,8 +15,6 @@ from app.rides.service import driver_for_user
 from app.users.models import User
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
-
-DOC_KINDS = {"identity", "license", "plate", "vehicle_photo", "driver_photo"}
 
 
 def update_profile(db: Session, user: User, name: str | None) -> dict:
