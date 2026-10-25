@@ -16,23 +16,33 @@ type Props = {
   focus?: Pin | null;
   zoom?: number;
   padding?: { top: number; bottom: number; left: number; right: number };
+  /** Acercamiento máximo al encuadrar: más bajo deja ver la ciudad aunque los puntos estén juntos. */
+  maxFitZoom?: number;
 };
 
 /** Mapa plano para datos (panel y zonas de demanda): estilo claro, sin 3D, con controles de zoom. */
-export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = { top: 60, bottom: 60, left: 60, right: 60 } }: Props) {
+export function FlatMap({
+  children,
+  fit,
+  fitKey,
+  focus,
+  zoom = 12.5,
+  padding = { top: 60, bottom: 60, left: 60, right: 60 },
+  maxFitZoom = 17,
+}: Props) {
   const ref = useRef<MapRef>(null);
   const mapStyle = useMapStyleProps();
   const recovery = useMapRecovery();
-  const latest = useRef({ fit, padding });
-  latest.current = { fit, padding };
+  const latest = useRef({ fit, padding, maxFitZoom });
+  latest.current = { fit, padding, maxFitZoom };
 
   // Se aplica al cambiar lo que se quiere ver y otra vez al terminar de cargar: antes de eso el mapa ignora el encuadre.
   function frame() {
     const map = ref.current;
-    const { fit, padding } = latest.current;
+    const { fit, padding, maxFitZoom } = latest.current;
     if (!map || !fit || fit.length === 0) return;
     if (fit.length === 1) {
-      map.flyTo({ center: [fit[0].longitude, fit[0].latitude], zoom: 15, duration: 600 });
+      map.flyTo({ center: [fit[0].longitude, fit[0].latitude], zoom: Math.min(15, maxFitZoom), duration: 600 });
       return;
     }
     const lngs = fit.map((pin) => pin.longitude);
@@ -42,7 +52,7 @@ export function FlatMap({ children, fit, fitKey, focus, zoom = 12.5, padding = {
         [Math.min(...lngs), Math.min(...lats)],
         [Math.max(...lngs), Math.max(...lats)],
       ],
-      { padding, duration: 600, maxZoom: 17 },
+      { padding, duration: 600, maxZoom: maxFitZoom },
     );
   }
 

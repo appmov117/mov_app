@@ -58,7 +58,14 @@ export function DriverDemand() {
     <Shell scroll={false} full>
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="relative h-[48%] min-h-[240px] shrink-0">
-          <FlatMap fit={fit} fitKey={data ? `${hours}-${data.zones.length}` : ""} focus={focus} padding={{ top: 70, bottom: 40, left: 40, right: 40 }}>
+          <FlatMap
+            fit={fit}
+            fitKey={data ? `${hours}-${data.zones.length}` : ""}
+            focus={focus}
+            zoom={12}
+            maxFitZoom={12.5}
+            padding={{ top: 70, bottom: 40, left: 40, right: 40 }}
+          >
             {data && (
               <Source id="demand" type="geojson" data={data}>
                 <Layer
