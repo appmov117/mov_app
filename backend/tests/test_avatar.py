@@ -44,3 +44,22 @@ def test_rejects_files_that_are_not_images_or_too_big(client):
 def test_unknown_or_malformed_avatar_names_return_404(client):
     assert client.get("/api/v1/avatars/no-existe.jpg").status_code == 404
     assert client.get("/api/v1/avatars/..%2Fsecret.jpg").status_code == 404
+
+
+def test_storage_failure_returns_clear_error_and_keeps_old_photo(client, monkeypatch):
+    import httpx
+    from app.core import storage
+
+    register(client, "passenger", "9994000099", "falla-foto@ruta.local")
+    headers = login(client, "falla-foto@ruta.local")
+    monkeypatch.setattr(storage, "_remote", lambda: True)
+    monkeypatch.setattr(storage, "_headers", lambda: {})
+    monkeypatch.setattr(
+        storage.httpx, "post", lambda *args, **kwargs: httpx.Response(403, text='{"message":"invalid key"}')
+    )
+    response = client.post(
+        "/api/v1/users/me/avatar", headers=headers, files={"file": ("foto.jpg", b"\xff\xd8\xff" + b"0" * 50, "image/jpeg")}
+    )
+    assert response.status_code == 502
+    assert "No pudimos guardar" in response.json()["detail"]
+    assert client.get("/api/v1/auth/me", headers=headers).json()["avatar_url"] is None

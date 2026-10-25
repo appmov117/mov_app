@@ -106,6 +106,8 @@ async def lifespan(app: FastAPI):
     relay_task = asyncio.create_task(relay())
     if not settings.testing:
         migrate()
+        if settings.frontend_dist and storage.backend() == "local":
+            logger.warning("storage=local: faltan SUPABASE_URL o SUPABASE_SERVICE_KEY; los archivos se perderán al reiniciar")
         if settings.seed:
             db = SessionLocal()
             try:
@@ -142,7 +144,7 @@ async def app_error(_request: Request, exc: AppError):
 
 @app.get("/api/v1/health")
 def health():
-    return {"ok": True}
+    return {"ok": True, "storage": storage.backend()}
 
 
 @app.get("/api/v1/meta")

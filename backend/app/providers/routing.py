@@ -2,7 +2,6 @@ import math
 from dataclasses import dataclass, field
 
 import httpx
-
 from app.config.settings import settings
 
 

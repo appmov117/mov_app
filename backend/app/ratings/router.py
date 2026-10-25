@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.core.deps import get_current_user, require_role
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.rides.schemas import RatingIn
 from app.rides.service import rate_ride
