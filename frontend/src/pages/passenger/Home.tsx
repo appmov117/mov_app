@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, Car, Home as HomeIcon, LocateFixed, MapPin, Package, Plane, Search, ShoppingBag, Star, UserRound, X } from "lucide-react";
+import { Briefcase, Car, Home as HomeIcon, LocateFixed, MapPin, Motorbike, Package, Plane, Search, ShoppingBag, Star, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
@@ -14,10 +14,12 @@ import { setPosition, usePosition } from "../../lib/position.ts";
 
 type Meta = { zone: Pin; zone_name: string };
 type Place = { label: string; latitude: number; longitude: number; kind?: string; id?: string; detail?: string };
-type Estimate = { distance_m: number; duration_s: number; fare: number; package_fare: number; route: { coordinates: number[][] } };
+type Estimate = { distance_m: number; duration_s: number; fare: number; moto_fare: number; package_fare: number; route: { coordinates: number[][] } };
 
 /** Destino que otra pantalla deja listo al abrir Inicio (p. ej. «Pedir de nuevo»). */
-export type TripPreset = { destination: Pin; label: string; detail?: string; stops?: Pin[]; tier?: "auto" | "paquete" };
+export type TripPreset = { destination: Pin; label: string; detail?: string; stops?: Pin[]; tier?: Tier };
+type Tier = "auto" | "moto" | "paquete";
+const TIER_NAMES: Record<Tier, string> = { auto: "Auto", moto: "Moto", paquete: "Paquete" };
 
 const fallback: Pin = { latitude: 20.9674, longitude: -89.5926 };
 const zoneRadiusM = 35_000;
@@ -58,7 +60,7 @@ export function PassengerHome() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
-  const [tier, setTier] = useState<"auto" | "paquete">("auto");
+  const [tier, setTier] = useState<Tier>("auto");
   const [focus, setFocus] = useState<Pin | null>(null);
   const [locating, setLocating] = useState(false);
   const [placing, setPlacing] = useState(false);
@@ -158,7 +160,7 @@ export function PassengerHome() {
           stops: waypoints,
           service: tier,
           origin_label: meta.data?.zone_name ?? "Mérida",
-          destination_label: `${destinationLabel || "Destino"} · ${tier === "paquete" ? "Paquete" : "Auto"}`,
+          destination_label: `${destinationLabel || "Destino"} · ${TIER_NAMES[tier]}`,
         }),
       }),
     onSuccess: () => navigate("/pasajero/viaje"),
@@ -250,8 +252,9 @@ export function PassengerHome() {
   const fare = estimate.data?.fare ?? 0;
   const eta = estimate.data ? Math.max(1, Math.round(estimate.data.duration_s / 60)) : null;
   const options = [
-    { id: "auto" as const, name: "Auto", icon: Car, eta, price: fare },
-    { id: "paquete" as const, name: "Paquete", icon: Package, eta, price: estimate.data?.package_fare ?? 0 },
+    { id: "auto" as const, name: TIER_NAMES.auto, icon: Car, eta, price: fare },
+    { id: "moto" as const, name: TIER_NAMES.moto, icon: Motorbike, eta, price: estimate.data?.moto_fare ?? 0 },
+    { id: "paquete" as const, name: TIER_NAMES.paquete, icon: Package, eta, price: estimate.data?.package_fare ?? 0 },
   ];
   const editingMap = placing || adjustingOrigin;
   const [hidden, setHidden] = useState<string[]>(readHidden);
@@ -551,9 +554,9 @@ export function PassengerHome() {
                 requestRide.mutate();
               }}
             >
-              {requestRide.isPending ? "Solicitando" : tier === "paquete" ? "Solicitar paquete" : "Solicitar auto"}
+              {requestRide.isPending ? "Solicitando" : `Solicitar ${TIER_NAMES[tier].toLowerCase()}`}
             </Button>
-            <p className="mt-3 text-center text-xs text-muted">Pagas directo al conductor.</p>
+            <p className="mt-3 text-center text-xs text-muted">Precio mínimo; el conductor puede proponer otro. Pagas directo al conductor.</p>
           </div>
         )}
       </section>

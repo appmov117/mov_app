@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Clock3, CreditCard, FileCheck2, LogOut, Star, Users } from "lucide-react";
+import { BadgeCheck, Clock3, CreditCard, FileCheck2, LogOut, Scale, ShieldCheck, Star, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
 import { MapStylePicker } from "../../components/MapStylePicker.tsx";
@@ -63,6 +63,12 @@ export function DriverProfile() {
           <LinkRow to="/conductor/documentos" icon={<FileCheck2 size={18} />} label="Documentos" detail="Identificación, licencia y vehículo" />
           <LinkRow to="/conductor/membresia" icon={<CreditCard size={18} />} label="Tu membresía" detail="Plan y comprobantes de pago" />
           <LinkRow to="/conductor/referidos" icon={<Users size={18} />} label="Referidos" detail="Gana días de membresía invitando" />
+        </ul>
+
+        <SectionTitle>Legal</SectionTitle>
+        <ul className="rounded-2xl border border-line">
+          <LinkRow to="/privacidad" icon={<ShieldCheck size={18} />} label="Aviso de Privacidad" />
+          <LinkRow to="/terminos" icon={<Scale size={18} />} label="Términos y deslinde" />
         </ul>
 
         <MapStylePicker />

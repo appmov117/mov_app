@@ -36,7 +36,7 @@ export function RecentTrip() {
 
   const { place, service } = splitLabel(data.destination_label);
   const go = (preset: TripPreset) => navigate("/pasajero", { state: { preset } });
-  const again = () => go({ destination: data.destination, label: place, stops: data.stops, tier: service === "Paquete" ? "paquete" : "auto" });
+  const again = () => go({ destination: data.destination, label: place, stops: data.stops, tier: service === "Paquete" ? "paquete" : service === "Moto" ? "moto" : "auto" });
   const view = outcomeView(data, place);
 
   return (

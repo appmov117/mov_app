@@ -66,7 +66,9 @@ def client():
         yield test_client
 
 
-def register(client: TestClient, role: str, phone: str, email: str, vehicle: bool = False) -> dict:
+def register(
+    client: TestClient, role: str, phone: str, email: str, vehicle: bool = False, kind: str = "auto"
+) -> dict:
     payload = {
         "name": email.split("@")[0],
         "phone": phone,
@@ -81,6 +83,7 @@ def register(client: TestClient, role: str, phone: str, email: str, vehicle: boo
             "year": 2021,
             "color": "Blanco",
             "plate": phone[-6:],
+            "kind": kind,
         }
     response = client.post("/api/v1/auth/register", json=payload)
     assert response.status_code == 200, response.text
@@ -114,8 +117,10 @@ def make_admin(client: TestClient) -> dict:
     return login(client, "admin-test@ruta.local")
 
 
-def ready_driver(client: TestClient, phone: str, email: str, lat: float, lng: float, admin: dict) -> dict:
-    register(client, "driver", phone, email, vehicle=True)
+def ready_driver(
+    client: TestClient, phone: str, email: str, lat: float, lng: float, admin: dict, kind: str = "auto"
+) -> dict:
+    register(client, "driver", phone, email, vehicle=True, kind=kind)
     headers = login(client, email)
     driver_id = client.get("/api/v1/drivers/me", headers=headers).json()["id"]
     assert client.post(f"/api/v1/admin/drivers/{driver_id}/activate", headers=admin).status_code == 200

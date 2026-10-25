@@ -49,10 +49,15 @@ def set_link(db: Session, key: str, url: str) -> str:
     parsed = urlparse(value)
     if parsed.scheme != "https" or not parsed.netloc or len(value) > 500:
         raise AppError(400, "La liga debe empezar con https://")
+    save_setting(db, key, value)
+    return value
+
+
+def save_setting(db: Session, key: str, value: str) -> None:
+    """Crea o reemplaza un ajuste guardado."""
     row = db.get(AppSetting, key)
     if row is None:
         db.add(AppSetting(key=key, value=value))
     else:
         row.value = value
         row.updated_at = func.now()
-    return value

@@ -23,7 +23,7 @@ def test_declined_counter_moves_search_forward(client):
     far = ready_driver(client, "9997000012", "contra2@ruta.local", 20.9940, -89.5926, admin)
     passenger, _request = request_ride(client)
     offer = client.get("/api/v1/drivers/me/ride-offers", headers=near).json()[0]
-    amount = offer["max_counter_fare"]
+    amount = offer["min_counter_fare"] + 5
     assert client.post(f"/api/v1/ride-offers/{offer['id']}/counter", headers=near, json={"amount": amount}).status_code == 200
 
     declined = client.post(f"/api/v1/ride-offers/{offer['id']}/counter/decline", headers=passenger)
@@ -104,7 +104,7 @@ def test_offer_keeps_road_eta_and_counters_reuse_it(client, monkeypatch):
 
     offer = client.get("/api/v1/drivers/me/ride-offers", headers=driver).json()[0]
     assert (offer["pickup_distance_m"], offer["pickup_eta_s"], offer["pickup_by_road"]) == (2600, 420, True)
-    client.post(f"/api/v1/ride-offers/{offer['id']}/counter", headers=driver, json={"amount": offer["max_counter_fare"]})
+    client.post(f"/api/v1/ride-offers/{offer['id']}/counter", headers=driver, json={"amount": offer["min_counter_fare"] + 5})
     counter = client.get("/api/v1/passengers/me/active", headers=passenger).json()["request"]["counter_offers"][0]
     assert (counter["pickup_eta_s"], counter["pickup_by_road"]) == (420, True)
     # Una sola consulta al abrir la ronda; mostrar la oferta y la contraoferta no consulta de nuevo.

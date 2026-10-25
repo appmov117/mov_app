@@ -1,4 +1,4 @@
-from decimal import ROUND_DOWN, ROUND_UP, Decimal
+from decimal import Decimal
 
 from app.db.session import SessionLocal
 from app.rides.service import tick
@@ -30,12 +30,9 @@ def request_ride(client) -> tuple[dict, dict]:
     return passenger, response.json()
 
 
-def counter_limit(estimate: float) -> Decimal:
-    return (Decimal(str(estimate)) * Decimal("1.10")).quantize(Decimal("0.01"), rounding=ROUND_DOWN)
-
-
-def counter_floor(estimate: float) -> Decimal:
-    return (Decimal(str(estimate)) * Decimal("0.90")).quantize(Decimal("0.01"), rounding=ROUND_UP)
+def counter_price(estimate: float) -> Decimal:
+    """Un precio arriba de la tarifa mínima, como el que propondría un conductor."""
+    return Decimal(str(estimate)) + Decimal("15")
 
 
 def test_search_continues_after_the_only_driver_rejects(client):
@@ -56,18 +53,18 @@ def test_search_continues_after_the_only_driver_rejects(client):
     assert len(client.get("/api/v1/drivers/me/ride-offers", headers=second).json()) == 1
 
 
-def test_driver_counter_offer_is_limited_to_ten_percent(client):
+def test_driver_sets_any_price_above_the_minimum(client):
     admin = make_admin(client)
     driver = ready_driver(client, "9995000020", "contra@ruta.local", 20.9674, -89.5926, admin)
     passenger, request = request_ride(client)
     offer = client.get("/api/v1/drivers/me/ride-offers", headers=driver).json()[0]
     estimate = request["estimated_fare"]
-    limit = counter_limit(estimate)
+    price = Decimal(str(estimate)) * 3
     url = f"/api/v1/ride-offers/{offer['id']}/counter"
 
+    assert offer["min_counter_fare"] == estimate
     assert client.post(url, headers=driver, json={"amount": estimate}).status_code == 400
-    assert client.post(url, headers=driver, json={"amount": float(limit) + 1}).status_code == 400
-    countered = client.post(url, headers=driver, json={"amount": float(limit)})
+    countered = client.post(url, headers=driver, json={"amount": float(price)})
     assert countered.status_code == 200, countered.text
     assert countered.json()["status"] == "countered"
 
@@ -75,13 +72,13 @@ def test_driver_counter_offer_is_limited_to_ten_percent(client):
         "counter_offers"
     ]
     assert len(counters) == 1
-    assert counters[0]["proposed_fare"] == float(limit)
+    assert counters[0]["proposed_fare"] == float(price)
     assert 0 < counters[0]["seconds_left"] <= 15
     assert counters[0]["driver"]["name"]
 
     accepted = client.post(f"/api/v1/ride-offers/{offer['id']}/counter/accept", headers=passenger)
     assert accepted.status_code == 200, accepted.text
-    assert accepted.json()["estimated_fare"] == float(limit)
+    assert accepted.json()["estimated_fare"] == float(price)
     assert (
         client.get("/api/v1/drivers/me/active", headers=driver).json()["id"]
         == accepted.json()["id"]
@@ -93,7 +90,7 @@ def test_counter_offer_can_be_declined_or_expire(client):
     driver = ready_driver(client, "9995000030", "vence@ruta.local", 20.9674, -89.5926, admin)
     passenger, request = request_ride(client)
     offer = client.get("/api/v1/drivers/me/ride-offers", headers=driver).json()[0]
-    amount = float(counter_limit(request["estimated_fare"]))
+    amount = float(counter_price(request["estimated_fare"]))
     client.post(
         f"/api/v1/ride-offers/{offer['id']}/counter", headers=driver, json={"amount": amount}
     )
@@ -118,7 +115,7 @@ def test_passenger_declines_counter_offer(client):
     driver = ready_driver(client, "9995000040", "declina@ruta.local", 20.9674, -89.5926, admin)
     passenger, request = request_ride(client)
     offer = client.get("/api/v1/drivers/me/ride-offers", headers=driver).json()[0]
-    amount = float(counter_limit(request["estimated_fare"]))
+    amount = float(counter_price(request["estimated_fare"]))
     client.post(
         f"/api/v1/ride-offers/{offer['id']}/counter", headers=driver, json={"amount": amount}
     )
@@ -130,21 +127,15 @@ def test_passenger_declines_counter_offer(client):
     assert active["request"]["counter_offers"] == []
 
 
-def test_driver_can_propose_up_to_ten_percent_less(client):
+def test_driver_cannot_go_below_the_minimum_fare(client):
     admin = make_admin(client)
     driver = ready_driver(client, "9995000030", "baja@ruta.local", 20.9674, -89.5926, admin)
-    passenger, request = request_ride(client)
+    _passenger, request = request_ride(client)
     offer = client.get("/api/v1/drivers/me/ride-offers", headers=driver).json()[0]
-    floor = counter_floor(request["estimated_fare"])
-    assert offer["min_counter_fare"] == float(floor)
-    url = f"/api/v1/ride-offers/{offer['id']}/counter"
+    floor = Decimal(str(request["estimated_fare"]))
 
-    too_low = client.post(url, headers=driver, json={"amount": float(floor - Decimal("0.01"))})
+    too_low = client.post(
+        f"/api/v1/ride-offers/{offer['id']}/counter", headers=driver, json={"amount": float(floor - Decimal("0.01"))}
+    )
     assert too_low.status_code == 400
-    assert "desde" in too_low.json()["detail"]
-    countered = client.post(url, headers=driver, json={"amount": float(floor)})
-    assert countered.status_code == 200, countered.text
-
-    accepted = client.post(f"/api/v1/ride-offers/{offer['id']}/counter/accept", headers=passenger)
-    assert accepted.status_code == 200, accepted.text
-    assert accepted.json()["estimated_fare"] == float(floor)
+    assert "mínima" in too_low.json()["detail"]

@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from app.analytics.models import AnalyticsEvent, AuditLog
-from app.config.settings import settings
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -16,12 +15,6 @@ def money(value: Decimal | float | int | None) -> float | None:
     if value is None:
         return None
     return float(value)
-
-
-def fare_for_distance(distance_m: int) -> Decimal:
-    km = Decimal(distance_m) / Decimal(1000)
-    amount = settings.base_fare + (km * settings.per_km)
-    return amount.quantize(Decimal("0.01"))
 
 
 def days_remaining(expires_at: datetime) -> int:

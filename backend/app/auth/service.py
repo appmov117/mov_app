@@ -114,6 +114,7 @@ def register(db: Session, data, *, allow_admin: bool = False) -> dict:
                 year=data.vehicle.year,
                 color=data.vehicle.color.strip(),
                 plate=plate,
+                kind=data.vehicle.kind,
                 active=True,
             )
         )

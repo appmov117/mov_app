@@ -32,9 +32,12 @@ router = APIRouter(tags=["rides"])
 
 
 @router.post("/ride-requests/estimate")
-async def estimate(data: RideRequestIn, user: User = Depends(require_role("passenger"))):
+async def estimate(
+    data: RideRequestIn, user: User = Depends(require_role("passenger")), db: Session = Depends(get_db)
+):
     ensure_pickup_allowed(data.origin.latitude, data.origin.longitude)
     return await build_estimate(
+        db,
         (data.origin.latitude, data.origin.longitude),
         (data.destination.latitude, data.destination.longitude),
         tuple((stop.latitude, stop.longitude) for stop in data.stops),

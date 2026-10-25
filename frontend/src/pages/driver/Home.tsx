@@ -27,8 +27,9 @@ type Offer = {
   trip_distance_m: number | null;
   estimated_fare: number | null;
   status: "pending" | "countered";
+  service: "auto" | "moto" | "paquete";
+  /** Tarifa mínima del viaje: el conductor puede cobrarla o proponer un precio mayor. */
   min_counter_fare: number | null;
-  max_counter_fare: number | null;
   proposed_fare: number | null;
   counter_expires_at: string | null;
 };
@@ -38,6 +39,7 @@ type Membership = { status: string; days_remaining: number };
 /** Centro de Mérida, mientras llega la primera lectura del GPS. */
 const center: Pin = { latitude: 20.9674, longitude: -89.5926 };
 const offerSeconds = 20;
+const SERVICE_NAMES = { auto: "Auto", moto: "Moto", paquete: "Paquete" };
 
 export function DriverHome() {
   const navigate = useNavigate();
@@ -106,12 +108,11 @@ export function DriverHome() {
   }
 
   if (offer) {
-    // El conductor puede proponer hasta 10 % menos o 10 % más que la tarifa estimada, en pesos enteros.
+    // El conductor fija su precio en pesos enteros, desde la tarifa mínima y sin tope.
     const estimated = offer.estimated_fare;
     const minCounter = offer.min_counter_fare != null ? Math.ceil(offer.min_counter_fare) : null;
-    const maxCounter = offer.max_counter_fare != null ? Math.floor(offer.max_counter_fare) : null;
-    const canCounter = estimated != null && minCounter != null && maxCounter != null && maxCounter > minCounter;
-    const sameAsEstimate = counterAmount != null && estimated != null && counterAmount === estimated;
+    const canCounter = estimated != null && minCounter != null;
+    const invalidCounter = counterAmount == null || minCounter == null || counterAmount < minCounter || counterAmount === estimated;
     const difference = counterAmount != null && estimated != null ? counterAmount - estimated : 0;
     return (
       <Shell nav={false} full>
@@ -121,7 +122,7 @@ export function DriverHome() {
               <h1 className="text-lg font-bold text-white/80">{offer.after_current_ride ? "Siguiente viaje" : "Nueva solicitud"}</h1>
               <p className="mt-1 text-5xl font-extrabold tracking-tight">{pesos(offer.estimated_fare)}</p>
               <p className="mt-1 text-sm text-white/70">
-                Tarifa estimada · {km(offer.trip_distance_m)} de viaje
+                Tarifa mínima · {SERVICE_NAMES[offer.service]} · {km(offer.trip_distance_m)} de viaje
               </p>
             </div>
             <Countdown seconds={seconds} total={offerSeconds} />
@@ -146,33 +147,45 @@ export function DriverHome() {
             )}
             {counterAmount != null && canCounter ? (
               <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-sm text-white/70">
-                  Tu precio, de {pesos(minCounter)} a {pesos(maxCounter)}
-                </p>
+                <p className="text-sm text-white/70">Tu precio, desde {pesos(minCounter)}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <button
                     type="button"
                     aria-label="Bajar precio"
                     className="grid h-11 w-11 place-items-center rounded-full border border-white/25 text-xl font-bold disabled:opacity-30"
                     disabled={counterAmount <= minCounter}
-                    onClick={() => setCounterAmount(Math.max(minCounter, counterAmount - 1))}
+                    onClick={() => setCounterAmount(Math.max(minCounter, counterAmount - 5))}
                   >
                     −
                   </button>
-                  <span className="text-center" aria-live="polite">
-                    <span className="block text-3xl font-extrabold">{pesos(counterAmount)}</span>
+                  <label className="text-center" aria-live="polite">
+                    <span className="sr-only">Precio en pesos</span>
+                    <span className="flex items-center justify-center text-3xl font-extrabold">
+                      $
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={minCounter}
+                        max={10000}
+                        className="w-28 bg-transparent text-center outline-none"
+                        value={counterAmount || ""}
+                        onChange={(event) => setCounterAmount(Math.min(10000, Math.max(0, Math.round(Number(event.target.value)))))}
+                      />
+                    </span>
                     <span className={`block text-xs font-semibold ${difference > 0 ? "text-[#86efac]" : difference < 0 ? "text-[#F2C14E]" : "text-white/70"}`}>
                       {difference === 0
-                        ? "Igual a la tarifa estimada"
-                        : `${difference > 0 ? "+" : "−"}${pesos(Math.abs(difference))} (${difference > 0 ? "+" : "−"}${Math.round((Math.abs(difference) / estimated!) * 100)} %)`}
+                        ? "Igual a la tarifa mínima"
+                        : counterAmount < minCounter
+                          ? "Menor a la tarifa mínima"
+                          : `${difference > 0 ? "+" : "−"}${pesos(Math.abs(difference))} (${difference > 0 ? "+" : "−"}${Math.round((Math.abs(difference) / estimated!) * 100)} %)`}
                     </span>
-                  </span>
+                  </label>
                   <button
                     type="button"
                     aria-label="Subir precio"
                     className="grid h-11 w-11 place-items-center rounded-full border border-white/25 text-xl font-bold disabled:opacity-30"
-                    disabled={counterAmount >= maxCounter}
-                    onClick={() => setCounterAmount(Math.min(maxCounter, counterAmount + 1))}
+                    disabled={counterAmount >= 10000}
+                    onClick={() => setCounterAmount(Math.min(10000, Math.max(minCounter, counterAmount) + 5))}
                   >
                     +
                   </button>
@@ -183,7 +196,7 @@ export function DriverHome() {
                   </button>
                   <button
                     className="h-11 rounded-full bg-brand-strong font-semibold disabled:opacity-50"
-                    disabled={counter.isPending || sameAsEstimate}
+                    disabled={counter.isPending || invalidCounter}
                     onClick={() => counter.mutate({ id: offer.id, amount: counterAmount })}
                   >
                     {counter.isPending ? "Enviando" : "Enviar"}
@@ -205,9 +218,9 @@ export function DriverHome() {
                     type="button"
                     className="h-12 w-full rounded-full border border-white/25 font-semibold disabled:opacity-60"
                     disabled={accept.isPending || reject.isPending}
-                    onClick={() => setCounterAmount(Math.min(maxCounter, Math.max(minCounter, Math.round(estimated))))}
+                    onClick={() => setCounterAmount(minCounter + 10)}
                   >
-                    Proponer otro precio
+                    Poner mi precio
                   </button>
                 )}
                 <button

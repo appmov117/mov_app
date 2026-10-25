@@ -1,7 +1,9 @@
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
 from app.admin.insights import broadcast, broadcasts, feedback, heatmap, memberships
+from app.admin.motos import moto_overview
 from app.admin.operations import list_rides, live, ride_detail
 from app.admin.reviews import list_complaints, list_documents, review_document
 from app.admin.service import (
@@ -26,6 +28,7 @@ from app.core.deps import require_role
 from app.core.errors import AppError
 from app.core.support import audit
 from app.db.session import get_db
+from app.rides.pricing import set_tariffs, tariffs
 from app.users.models import User
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -80,8 +83,13 @@ def passengers(user: User = Depends(require_role("admin")), db: Session = Depend
 
 
 @router.get("/rides")
-def rides(status: str = "all", user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
-    return list_rides(db, status)
+def rides(
+    status: str = "all",
+    service: str | None = None,
+    user: User = Depends(require_role("admin")),
+    db: Session = Depends(get_db),
+):
+    return list_rides(db, status, service)
 
 
 @router.get("/rides/{ride_id}")
@@ -220,3 +228,35 @@ def update_payment_link(
     audit(db, user.id, "payment_link_updated", {"setting": name, "url": url})
     db.commit()
     return {"url": url}
+
+
+class TariffIn(BaseModel):
+    base: Decimal = Field(ge=0, le=1000, max_digits=7, decimal_places=2)
+    per_km: Decimal = Field(gt=0, le=1000, max_digits=7, decimal_places=2)
+
+
+class TariffsIn(BaseModel):
+    auto: TariffIn
+    moto: TariffIn
+
+
+def _present_tariffs(values: dict) -> dict:
+    return {kind: {name: float(amount) for name, amount in tariff.items()} for kind, tariff in values.items()}
+
+
+@router.get("/tariffs")
+def get_tariffs(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return _present_tariffs(tariffs(db))
+
+
+@router.put("/tariffs")
+def update_tariffs(data: TariffsIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    values = set_tariffs(db, {"auto": data.auto.model_dump(), "moto": data.moto.model_dump()})
+    audit(db, user.id, "tariffs_updated", _present_tariffs(values))
+    db.commit()
+    return _present_tariffs(values)
+
+
+@router.get("/motos")
+def motos(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return moto_overview(db)

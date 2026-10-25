@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Clock, LogOut, Mail, MessageCircle, Phone, Wallet } from "lucide-react";
+import { Clock, LogOut, Mail, MessageCircle, Phone, Scale, ShieldCheck, Wallet } from "lucide-react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
@@ -46,6 +46,12 @@ export function PassengerProfile() {
         <ul className="rounded-2xl border border-line">
           <LinkRow to="/pasajero/historial" icon={<Clock size={18} />} label="Mis viajes" />
           <LinkRow to="/pasajero/mensajes" icon={<MessageCircle size={18} />} label="Mensajes" />
+        </ul>
+
+        <SectionTitle>Legal</SectionTitle>
+        <ul className="rounded-2xl border border-line">
+          <LinkRow to="/privacidad" icon={<ShieldCheck size={18} />} label="Aviso de Privacidad" />
+          <LinkRow to="/terminos" icon={<Scale size={18} />} label="Términos y deslinde" />
         </ul>
 
         <MapStylePicker />

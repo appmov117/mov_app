@@ -20,6 +20,7 @@ class RideRequest(Base):
     estimated_fare: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     route_geometry: Mapped[dict | None] = mapped_column(JSONB)
     stops: Mapped[list] = mapped_column(JSONB, default=list)
+    service: Mapped[str] = mapped_column(Text, default="auto")
     wave: Mapped[int] = mapped_column(Integer, default=0)
     wave_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(Text, default="searching")

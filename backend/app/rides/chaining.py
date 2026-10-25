@@ -11,7 +11,7 @@ URBAN_MPS = 25_000 / 3600
 
 
 def finishing_candidates(
-    db: Session, origin: dict, radius_m: int, excluded: list
+    db: Session, origin: dict, radius_m: int, excluded: list, service: str
 ) -> list[tuple[Candidate, Leg]]:
     """Conductores que terminan pronto, con su tiempo total hasta la nueva recogida.
 
@@ -20,13 +20,14 @@ def finishing_candidates(
         origin: Punto de recogida con `latitude` y `longitude`.
         radius_m: Radio de búsqueda alrededor de la recogida, medido desde el destino actual.
         excluded: Conductores que ya recibieron esta solicitud.
+        service: Servicio pedido; solo cuentan los conductores con el vehículo que le corresponde.
 
     Returns:
         Pares (candidato, recorrido). El recorrido suma lo que falta del viaje actual más el
         trayecto de ese destino a la recogida; la distancia es solo la de ese último tramo.
     """
     rows = repository.find_finishing(
-        db, origin["latitude"], origin["longitude"], radius_m, MAX_CANDIDATES, excluded
+        db, origin["latitude"], origin["longitude"], radius_m, MAX_CANDIDATES, excluded, service
     )
     if not rows:
         return []

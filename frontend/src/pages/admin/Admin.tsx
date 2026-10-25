@@ -8,10 +8,12 @@ import {
   Megaphone,
   Menu,
   MessageSquareWarning,
+  Motorbike,
   Radio,
   Route,
   ShieldAlert,
   Star,
+  Tags,
   Wallet,
   X,
   type LucideIcon,
@@ -29,9 +31,11 @@ import { Feedback } from "./Feedback.tsx";
 import { Heatmap } from "./Heatmap.tsx";
 import { Live } from "./Live.tsx";
 import { Memberships } from "./Memberships.tsx";
+import { Motos } from "./Motos.tsx";
 import { Overview } from "./Overview.tsx";
 import { Rides } from "./Rides.tsx";
 import { Safety, type Alert } from "./Safety.tsx";
+import { Tariffs } from "./Tariffs.tsx";
 
 type Counts = { documents: number; payments: number; complaints: number };
 type Section = { id: string; label: string; icon: LucideIcon; badge?: keyof Counts | "alerts" };
@@ -44,12 +48,14 @@ const GROUPS: { title: string; items: Section[] }[] = [
       { id: "resumen", label: "Resumen", icon: LayoutDashboard },
       { id: "viajes", label: "Viajes", icon: Route },
       { id: "calor", label: "Mapa de calor", icon: Hexagon },
+      { id: "tarifas", label: "Tarifas", icon: Tags },
     ],
   },
   {
     title: "Conductores",
     items: [
       { id: "conductores", label: "Conductores", icon: Car },
+      { id: "motos", label: "Motos", icon: Motorbike },
       { id: "documentos", label: "Documentos", icon: FileCheck2, badge: "documents" },
       { id: "membresias", label: "Membresías y pagos", icon: Wallet, badge: "payments" },
     ],
@@ -108,7 +114,9 @@ function SectionView({ section, alerts }: { section: string; alerts: Alert[] }):
     case "resumen": return <Overview />;
     case "viajes": return <Rides />;
     case "calor": return <Heatmap />;
+    case "tarifas": return <Tariffs />;
     case "conductores": return <Drivers />;
+    case "motos": return <Motos />;
     case "documentos": return <Documents />;
     case "membresias": return <Memberships />;
     case "quejas": return <Complaints />;

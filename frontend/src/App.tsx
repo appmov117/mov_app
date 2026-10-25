@@ -7,6 +7,8 @@ import { Landing } from "./pages/Landing.tsx";
 
 const Login = lazy(() => import("./pages/Login.tsx").then((module) => ({ default: module.Login })));
 const ReferralLanding = lazy(() => import("./pages/Referral.tsx").then((module) => ({ default: module.ReferralLanding })));
+const PrivacyPolicy = lazy(() => import("./pages/Legal.tsx").then((module) => ({ default: module.PrivacyPolicy })));
+const Terms = lazy(() => import("./pages/Legal.tsx").then((module) => ({ default: module.Terms })));
 const Register = lazy(() => import("./pages/Register.tsx").then((module) => ({ default: module.Register })));
 const AdminHome = lazy(() => import("./pages/admin/Admin.tsx").then((module) => ({ default: module.AdminHome })));
 const DriverHome = lazy(() => import("./pages/driver/Home.tsx").then((module) => ({ default: module.DriverHome })));
@@ -41,6 +43,8 @@ export default function App() {
         <Route path="/entrar" element={<Login />} />
         <Route path="/registro" element={<Register />} />
         <Route path="/r/:code" element={<ReferralLanding />} />
+        <Route path="/privacidad" element={<PrivacyPolicy />} />
+        <Route path="/terminos" element={<Terms />} />
         <Route path="/pasajero" element={<Gate role="passenger"><PassengerHome /></Gate>} />
         <Route path="/pasajero/viaje" element={<Gate role="passenger"><PassengerRide /></Gate>} />
         <Route path="/pasajero/historial" element={<Gate role="passenger"><PassengerHistory /></Gate>} />

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -7,6 +9,7 @@ class VehicleCreate(BaseModel):
     year: int = Field(ge=1990, le=2035)
     color: str = Field(min_length=1, max_length=30)
     plate: str = Field(min_length=4, max_length=12)
+    kind: Literal["auto", "moto"] = "auto"
 
 
 class VehicleUpdate(BaseModel):
@@ -15,4 +18,5 @@ class VehicleUpdate(BaseModel):
     year: int | None = Field(default=None, ge=1990, le=2035)
     color: str | None = None
     plate: str | None = None
+    kind: Literal["auto", "moto"] | None = None
     active: bool | None = None

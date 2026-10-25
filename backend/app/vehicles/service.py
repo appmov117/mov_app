@@ -28,6 +28,7 @@ def create_vehicle(db: Session, user: User, data) -> dict:
         year=data.year,
         color=data.color.strip(),
         plate=plate,
+        kind=data.kind,
         active=True,
     )
     db.add(row)
@@ -52,6 +53,8 @@ def update_vehicle(db: Session, user: User, vehicle_id: UUID, data) -> dict:
         if taken:
             raise AppError(409, "Esa placa ya está registrada")
         row.plate = plate
+    if data.kind:
+        row.kind = data.kind
     if data.active is not None:
         row.active = data.active
     db.commit()
@@ -75,5 +78,6 @@ def _present(row: Vehicle) -> dict:
         "year": row.year,
         "color": row.color,
         "plate": row.plate,
+        "kind": row.kind,
         "active": row.active,
     }

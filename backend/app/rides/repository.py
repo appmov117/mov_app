@@ -8,6 +8,12 @@ from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Session
 
+# Tipo del vehículo con que trabaja el conductor: el activo más antiguo, como el que ve el pasajero.
+VEHICLE_KIND = """COALESCE(
+    (SELECT v.kind FROM vehicles v WHERE v.driver_id = d.id AND v.active ORDER BY v.created_at LIMIT 1),
+    'auto'
+)"""
+
 
 def insert_request(db: Session, params: dict) -> None:
     db.execute(
@@ -16,14 +22,14 @@ def insert_request(db: Session, params: dict) -> None:
             INSERT INTO ride_requests (
                 id, passenger_id, origin, destination, origin_label, destination_label,
                 estimated_distance_m, estimated_duration_s, estimated_fare, route_geometry, stops,
-                wave, status, created_at, expires_at
+                service, wave, status, created_at, expires_at
             ) VALUES (
                 :id, :passenger_id,
                 ST_SetSRID(ST_MakePoint(:origin_lng, :origin_lat), 4326)::geography,
                 ST_SetSRID(ST_MakePoint(:destination_lng, :destination_lat), 4326)::geography,
                 :origin_label, :destination_label,
                 :distance_m, :duration_s, :fare, CAST(:geometry AS jsonb), CAST(:stops AS jsonb),
-                0, 'searching', :created_at, :expires_at
+                :service, 0, 'searching', :created_at, :expires_at
             )
             """
         ),
@@ -98,15 +104,19 @@ def find_candidates(
     limit: int,
     excluded: list[UUID],
     favorites: list[UUID],
+    service: str,
 ) -> list[Candidate]:
-    """Conductores disponibles dentro del radio: favoritos primero y luego por distancia en línea recta."""
+    """Conductores disponibles dentro del radio: favoritos primero y luego por distancia en línea recta.
+
+    Solo entran los que tienen el vehículo del servicio pedido; un paquete lo lleva auto o moto.
+    """
     if not excluded:
         excluded = [UUID("00000000-0000-0000-0000-000000000000")]
     if not favorites:
         favorites = [UUID("00000000-0000-0000-0000-000000000000")]
     rows = db.execute(
         text(
-            """
+            f"""
             SELECT d.id,
                    ST_Y(dl.location::geometry) AS lat,
                    ST_X(dl.location::geometry) AS lng,
@@ -136,6 +146,7 @@ def find_candidates(
                     WHERE o.driver_id = d.id AND o.status = 'countered'
                   )
               AND NOT (d.id = ANY(:excluded))
+              AND (:service = 'paquete' OR {VEHICLE_KIND} = :service)
             ORDER BY
               CASE WHEN d.id = ANY(:favorites) THEN 0 ELSE 1 END,
               ST_Distance(dl.location, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)
@@ -151,6 +162,7 @@ def find_candidates(
             "radius": radius_m,
             "excluded": excluded,
             "favorites": favorites,
+            "service": service,
             "lim": limit,
             "max_age": settings.location_max_age_s,
         },
@@ -162,7 +174,13 @@ def find_candidates(
 
 
 def find_finishing(
-    db: Session, latitude: float, longitude: float, radius_m: int, limit: int, excluded: list[UUID]
+    db: Session,
+    latitude: float,
+    longitude: float,
+    radius_m: int,
+    limit: int,
+    excluded: list[UUID],
+    service: str,
 ) -> list:
     """Conductores con pasajero a bordo cuyo destino queda dentro del radio de la nueva recogida.
 
@@ -172,7 +190,7 @@ def find_finishing(
         excluded = [UUID("00000000-0000-0000-0000-000000000000")]
     return db.execute(
         text(
-            """
+            f"""
             SELECT d.id,
                    ST_Y(dl.location::geometry) AS lat,
                    ST_X(dl.location::geometry) AS lng,
@@ -200,6 +218,7 @@ def find_finishing(
                     WHERE o.driver_id = d.id AND o.status = 'countered'
                   )
               AND NOT (d.id = ANY(:excluded))
+              AND (:service = 'paquete' OR {VEHICLE_KIND} = :service)
             ORDER BY end_to_pickup_m
             LIMIT :lim
             """
@@ -209,6 +228,7 @@ def find_finishing(
             "lng": longitude,
             "radius": radius_m,
             "excluded": excluded,
+            "service": service,
             "lim": limit,
             "max_age": settings.location_max_age_s,
         },

@@ -115,23 +115,26 @@ def live(db: Session) -> dict:
     }
 
 
-def list_rides(db: Session, status: str = "all", limit: int = 200) -> list[dict]:
-    """Viajes recientes con origen, destino y participantes, filtrados por estado."""
-    if status not in RIDE_FILTERS:
+def list_rides(db: Session, status: str = "all", service: str | None = None, limit: int = 200) -> list[dict]:
+    """Viajes recientes con origen, destino y participantes, filtrados por estado y servicio."""
+    if status not in RIDE_FILTERS or service not in (None, "auto", "moto", "paquete"):
         raise AppError(400, "Filtro de viajes inválido")
+    conditions = (["r.status = ANY(:statuses)"] if RIDE_FILTERS[status] else []) + (
+        ["q.service = :service"] if service else []
+    )
     query = text(
         f"""
         SELECT r.id, r.status, r.passenger_id, r.driver_id, r.fare_amount, r.payment_method,
                r.distance_m, r.created_at, r.completed_at, q.origin_label, q.destination_label,
-               q.estimated_fare
+               q.estimated_fare, q.service
         FROM rides r
         JOIN ride_requests q ON q.id = r.ride_request_id
-        {"WHERE r.status = ANY(:statuses)" if RIDE_FILTERS[status] else ""}
+        {"WHERE " + " AND ".join(conditions) if conditions else ""}
         ORDER BY r.created_at DESC
         LIMIT :limit
         """
     )
-    params = {"limit": limit} | ({"statuses": list(RIDE_FILTERS[status])} if RIDE_FILTERS[status] else {})
+    params = {"limit": limit, "statuses": list(RIDE_FILTERS[status] or ()), "service": service}
     rows = db.execute(query, params).all()
     passengers = passengers_by_id(db, [row.passenger_id for row in rows])
     drivers = drivers_by_id(db, [row.driver_id for row in rows])
@@ -139,6 +142,7 @@ def list_rides(db: Session, status: str = "all", limit: int = 200) -> list[dict]
         {
             "id": str(row.id),
             "status": row.status,
+            "service": row.service,
             "origin_label": row.origin_label,
             "destination_label": row.destination_label,
             "fare_amount": money(row.fare_amount),

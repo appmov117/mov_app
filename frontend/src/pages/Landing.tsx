@@ -59,6 +59,10 @@ export function Landing() {
                 Regístrate como conductor
               </Link>
             </p>
+            <p className="text-center text-xs text-muted">
+              <Link to="/privacidad" className="underline">Aviso de Privacidad</Link> ·{" "}
+              <Link to="/terminos" className="underline">Términos y deslinde</Link>
+            </p>
           </div>
         </div>
       </div>

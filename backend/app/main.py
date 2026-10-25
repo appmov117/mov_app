@@ -40,6 +40,7 @@ from app.ratings.router import router as ratings_router
 from app.realtime import events as live_events
 from app.realtime.router import router as live_router
 from app.referrals.router import router as referrals_router
+from app.rides.pricing import tariffs
 from app.rides.router import router as rides_router
 from app.rides.schemas import PointIn
 from app.rides.service import tick
@@ -151,8 +152,9 @@ def meta(db: Session = Depends(get_db)):
         "zone": {"latitude": settings.zone_lat, "longitude": settings.zone_lng},
         "membership_price": float(settings.membership_price),
         "membership_days": settings.membership_days,
-        "base_fare": float(settings.base_fare),
-        "per_km": float(settings.per_km),
+        "tariffs": {
+            kind: {name: float(amount) for name, amount in values.items()} for kind, values in tariffs(db).items()
+        },
         "payment_url": payment_url(db),
     }
 

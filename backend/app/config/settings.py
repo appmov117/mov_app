@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     membership_payment_url: str = "https://www.mercadopago.com.mx"
     base_fare: Decimal = Decimal("20")
     per_km: Decimal = Decimal("6")
+    moto_base_fare: Decimal = Decimal("15")
+    moto_per_km: Decimal = Decimal("4")
     package_factor: Decimal = Decimal("0.70")
     zone_name: str = "Centro de Mérida"
     zone_lat: float = 20.9674
@@ -29,8 +31,6 @@ class Settings(BaseSettings):
     testing: bool = False
     location_min_interval_s: float = 3
     location_max_age_s: int = 600
-    counter_min_ratio: Decimal = Decimal("0.90")
-    counter_max_ratio: Decimal = Decimal("1.10")
     counter_ttl_seconds: int = 15
     vapid_public_key: str = ""
     vapid_private_key: SecretStr = SecretStr("")

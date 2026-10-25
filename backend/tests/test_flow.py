@@ -3,8 +3,8 @@ from threading import Thread
 from uuid import UUID
 
 from app.core.errors import AppError
-from app.core.support import fare_for_distance
 from app.db.session import SessionLocal
+from app.rides.pricing import fare
 from app.rides.service import accept_offer
 from app.users.models import User
 from sqlalchemy import select
@@ -12,7 +12,11 @@ from tests.conftest import login, make_admin, ready_driver, register
 
 
 def test_fare_is_base_plus_distance():
-    assert fare_for_distance(8000) == Decimal("81.00")
+    db = SessionLocal()
+    assert fare(db, "auto", 8000) == Decimal("68.00")
+    assert fare(db, "moto", 8000) == Decimal("47.00")
+    assert fare(db, "paquete", 8000) == Decimal("47.60")
+    db.close()
 
 
 def test_passenger_cannot_open_two_rides(client):

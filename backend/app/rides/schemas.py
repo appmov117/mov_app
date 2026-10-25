@@ -13,13 +13,13 @@ class RideRequestIn(BaseModel):
     origin: PointIn
     destination: PointIn
     stops: list[PointIn] = Field(default_factory=list, max_length=4)
-    service: Literal["auto", "paquete"] = "auto"
+    service: Literal["auto", "moto", "paquete"] = "auto"
     origin_label: str | None = Field(default=None, max_length=160)
     destination_label: str | None = Field(default=None, max_length=160)
 
 
 class CounterIn(BaseModel):
-    amount: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    amount: Decimal = Field(gt=0, le=10000, max_digits=10, decimal_places=2)
 
 
 class RejectIn(BaseModel):

@@ -17,5 +17,6 @@ class Vehicle(Base):
     year: Mapped[int | None] = mapped_column(Integer)
     color: Mapped[str | None] = mapped_column(Text)
     plate: Mapped[str | None] = mapped_column(Text, unique=True)
+    kind: Mapped[str] = mapped_column(Text, default="auto")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
