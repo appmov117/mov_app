@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, Clock3, CreditCard, FileCheck2, LogOut, Scale, ShieldCheck, Star, Users } from "lucide-react";
+import { BadgeCheck, Clock3, CreditCard, FileCheck2, Landmark, LogOut, Scale, ShieldCheck, Star, Users } from "lucide-react";
+import { DriverPreferences } from "../../components/DriverPreferences.tsx";
+import type { Amenities } from "../../components/TripCodes.tsx";
 import { useNavigate } from "react-router-dom";
 import { EditableName } from "../../components/EditableName.tsx";
 import { MapStylePicker } from "../../components/MapStylePicker.tsx";
@@ -11,7 +13,15 @@ import { LinkRow, SectionTitle } from "../../components/ui/list.tsx";
 import { api } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
 
-type Me = { name: string; rating: number; verification_status: string; completed_rides: number; cancelled_rides: number };
+type Me = {
+  name: string;
+  rating: number;
+  verification_status: string;
+  completed_rides: number;
+  cancelled_rides: number;
+  require_pin: boolean;
+  amenities: Amenities;
+};
 
 export function DriverProfile() {
   const { logout } = useAuth();
@@ -63,7 +73,10 @@ export function DriverProfile() {
           <LinkRow to="/conductor/documentos" icon={<FileCheck2 size={18} />} label="Documentos" detail="Identificación, licencia y vehículo" />
           <LinkRow to="/conductor/membresia" icon={<CreditCard size={18} />} label="Tu membresía" detail="Plan y comprobantes de pago" />
           <LinkRow to="/conductor/referidos" icon={<Users size={18} />} label="Referidos" detail="Gana días de membresía invitando" />
+          <LinkRow to="/conductor/pagos" icon={<Landmark size={18} />} label="Datos de pago" detail="CLABE para cobrar por transferencia" />
         </ul>
+
+        <DriverPreferences amenities={data?.amenities} requirePin={data?.require_pin} />
 
         <SectionTitle>Legal</SectionTitle>
         <ul className="rounded-2xl border border-line">

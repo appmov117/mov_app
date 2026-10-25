@@ -117,7 +117,7 @@ def live(db: Session) -> dict:
 
 def list_rides(db: Session, status: str = "all", service: str | None = None, limit: int = 200) -> list[dict]:
     """Viajes recientes con origen, destino y participantes, filtrados por estado y servicio."""
-    if status not in RIDE_FILTERS or service not in (None, "auto", "moto", "paquete"):
+    if status not in RIDE_FILTERS or service not in (None, "auto", "moto", "paquete", "paquete_moto"):
         raise AppError(400, "Filtro de viajes inválido")
     conditions = (["r.status = ANY(:statuses)"] if RIDE_FILTERS[status] else []) + (
         ["q.service = :service"] if service else []

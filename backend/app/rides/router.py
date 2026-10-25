@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from app.core.deps import require_role
+from app.core.deps import get_current_user, require_role
 from app.core.rate_limit import hit
 from app.db.session import get_db
-from app.rides.schemas import CompleteIn, CounterIn, RejectIn, RideRequestIn
+from app.rides import extras
+from app.rides.schemas import CompleteIn, CounterIn, RejectIn, RideRequestIn, StartIn
 from app.rides.service import (
     accept_counter,
     accept_offer,
@@ -21,12 +22,14 @@ from app.rides.service import (
     mark_arriving,
     mark_stop_arrived,
     nearby_drivers,
+    owned_ride,
     reject_offer,
     start_ride,
 )
 from app.rides.zones import ensure_pickup_allowed
 from app.users.models import User
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends, File, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 router = APIRouter(tags=["rides"])
@@ -118,8 +121,32 @@ def arrived(ride_id: UUID, user: User = Depends(require_role("driver")), db: Ses
 
 
 @router.post("/rides/{ride_id}/start")
-def start(ride_id: UUID, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
-    return start_ride(db, user, ride_id)
+def start(
+    ride_id: UUID,
+    data: StartIn | None = Body(default=None),
+    user: User = Depends(require_role("driver")),
+    db: Session = Depends(get_db),
+):
+    return start_ride(db, user, ride_id, data.pin if data else None)
+
+
+@router.post("/rides/{ride_id}/delivery-photo")
+async def delivery_photo(
+    ride_id: UUID,
+    file: UploadFile = File(...),
+    user: User = Depends(require_role("driver")),
+    db: Session = Depends(get_db),
+):
+    ride, _driver, _passenger = owned_ride(db, user, ride_id, driver_only=True)
+    extras.save_delivery_photo(db, ride, file.content_type, await file.read())
+    return {"ok": True}
+
+
+@router.get("/rides/{ride_id}/delivery-photo")
+def get_delivery_photo(ride_id: UUID, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    ride, _driver, _passenger = owned_ride(db, user, ride_id)
+    content, mime = extras.load_delivery_photo(ride)
+    return Response(content, media_type=mime, headers={"Cache-Control": "private, max-age=3600"})
 
 
 @router.post("/rides/{ride_id}/stops/arrived")
@@ -138,7 +165,7 @@ def complete(ride_id: UUID, data: CompleteIn, user: User = Depends(require_role(
         from app.core.errors import AppError
 
         raise AppError(400, "Elige efectivo, terminal u otro")
-    return complete_ride(db, user, ride_id, data.fare_amount, data.payment_method)
+    return complete_ride(db, user, ride_id, data.fare_amount, data.payment_method, data.delivery_code)
 
 
 @router.post("/rides/{ride_id}/cancel")

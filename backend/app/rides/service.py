@@ -7,13 +7,14 @@ from app.config.settings import settings
 from app.core.errors import AppError
 from app.core.support import audit, money, track, utcnow
 from app.core.ws import publish
+from app.drivers.amenities import amenities_of
 from app.drivers.models import Driver
 from app.drivers.onboarding import can_operate, review_documents
 from app.notifications.service import notify
 from app.passengers.models import FavoriteDriver, Passenger
 from app.ratings.models import Rating
 from app.referrals.service import on_passenger_ride_completed
-from app.rides import pricing, repository
+from app.rides import extras, pricing, repository
 from app.rides.chaining import URBAN_MPS, finishing_candidates
 from app.rides.models import Ride, RideEvent, RideOffer, RideRequest
 from app.rides.ranking import MAX_CANDIDATES, Leg, order_candidates, pickup_legs
@@ -146,6 +147,10 @@ def present_ride(db: Session, ride: Ride) -> dict:
             else None
         ),
         "route": request.route_geometry if request else None,
+        "service": request.service if request else "auto",
+        "package": request.package if request else None,
+        "pin_required": bool(ride.start_pin),
+        "has_delivery_photo": bool(ride.delivery_photo_key),
         "estimated_fare": money(request.estimated_fare) if request else None,
         "estimated_distance_m": request.estimated_distance_m if request else None,
         "estimated_duration_s": request.estimated_duration_s if request else None,
@@ -163,6 +168,7 @@ def present_ride(db: Session, ride: Ride) -> dict:
             "phone": driver_user.phone if driver_user else None,
             "rating": float(driver.rating),
             "vehicle": _vehicle(db, driver.id),
+            "amenities": amenities_of(driver),
             "location": repository.driver_coords(db, driver.id),
         }
         if driver and driver_user
@@ -185,6 +191,9 @@ def present_request(db: Session, request: RideRequest) -> dict:
         "destination_label": request.destination_label,
         "stops": request.stops,
         "service": request.service,
+        "package": request.package,
+        "min_fare": money(request.min_fare),
+        "surcharge_label": request.surcharge_label,
         "estimated_distance_m": request.estimated_distance_m,
         "estimated_duration_s": request.estimated_duration_s,
         "estimated_fare": money(request.estimated_fare),
@@ -212,6 +221,10 @@ def present_offer(db: Session, offer: RideOffer) -> dict:
         "stop_count": len(request.stops),
         "service": request.service,
         "route": request.route_geometry,
+        "package": request.package,
+        "surcharge_label": request.surcharge_label,
+        # El pasajero propuso su precio: puede ser menor que la tarifa mínima.
+        "passenger_offered": request.min_fare is not None and request.estimated_fare != request.min_fare,
         "pickup_distance_m": pickup,
         "pickup_eta_s": pickup_eta,
         "pickup_by_road": by_road,
@@ -219,7 +232,7 @@ def present_offer(db: Session, offer: RideOffer) -> dict:
         "trip_distance_m": request.estimated_distance_m,
         "trip_duration_s": request.estimated_duration_s,
         "estimated_fare": money(request.estimated_fare),
-        "min_counter_fare": money(request.estimated_fare),
+        "min_counter_fare": money(request.min_fare or request.estimated_fare),
         "proposed_fare": money(offer.proposed_fare),
         "counter_expires_at": _counter_deadline(offer),
         "offered_at": offer.offered_at.isoformat() if offer.offered_at else None,
@@ -268,7 +281,12 @@ def _present_counters(db: Session, request: RideRequest) -> list[dict]:
                 "pickup_distance_m": pickup,
                 "pickup_eta_s": pickup_eta,
                 "pickup_by_road": by_road,
-                "driver": {"name": account.name, "rating": float(driver.rating), "vehicle": _vehicle(db, driver.id)},
+                "driver": {
+                    "name": account.name,
+                    "rating": float(driver.rating),
+                    "vehicle": _vehicle(db, driver.id),
+                    "amenities": amenities_of(driver),
+                },
             }
         )
     return rows
@@ -283,12 +301,16 @@ async def build_estimate(
     from app.providers.routing import routing_provider
 
     route = await routing_provider.route(origin, destination, via)
+    percent, label = pricing.current_surcharge(db)
     return {
         "distance_m": route.distance_m,
         "duration_s": route.duration_s,
-        "fare": float(pricing.fare(db, "auto", route.distance_m)),
-        "moto_fare": float(pricing.fare(db, "moto", route.distance_m)),
-        "package_fare": float(pricing.fare(db, "paquete", route.distance_m)),
+        "fare": float(pricing.fare(db, "auto", route.distance_m, percent)),
+        "moto_fare": float(pricing.fare(db, "moto", route.distance_m, percent)),
+        "package_fare": float(pricing.fare(db, "paquete", route.distance_m, percent)),
+        "moto_package_fare": float(pricing.fare(db, "paquete_moto", route.distance_m, percent)),
+        "surcharge": {"percent": percent, "label": label} if percent else None,
+        "offer_floor_ratio": float(extras.OFFER_FLOOR_RATIO),
         "route": {"type": "LineString", "coordinates": route.geometry},
     }
 
@@ -434,6 +456,7 @@ async def create_request(db: Session, user: User, payload) -> dict:
         (payload.destination.latitude, payload.destination.longitude),
         tuple((stop.latitude, stop.longitude) for stop in payload.stops),
     )
+    price = extras.price_request(db, payload.service, estimate["distance_m"], payload.offered_fare)
     now = utcnow()
     request_id = uuid4()
     repository.insert_request(
@@ -449,7 +472,7 @@ async def create_request(db: Session, user: User, payload) -> dict:
             "destination_label": payload.destination_label,
             "distance_m": estimate["distance_m"],
             "duration_s": estimate["duration_s"],
-            "fare": pricing.fare(db, payload.service, estimate["distance_m"]),
+            "fare": price["fare"],
             "service": payload.service,
             "geometry": json.dumps(estimate["route"]),
             "stops": json.dumps([stop.model_dump() for stop in payload.stops]),
@@ -457,6 +480,14 @@ async def create_request(db: Session, user: User, payload) -> dict:
             "expires_at": now + timedelta(seconds=settings.request_ttl_seconds),
         },
     )
+    db.flush()
+    created = db.get(RideRequest, request_id)
+    created.min_fare = price["min_fare"]
+    created.surcharge_percent = price["surcharge_percent"]
+    created.surcharge_label = price["surcharge_label"]
+    if payload.package:
+        created.package = payload.package.model_dump()
+        created.delivery_code = extras.four_digits()
     db.flush()
     audit(db, user.id, "ride_created", {"request_id": str(request_id)})
     track(db, user.id, "ride_requested", {"request_id": str(request_id)})
@@ -572,6 +603,8 @@ def _assign(db: Session, actor: User, request: RideRequest, offer: RideOffer, dr
     )
     db.flush()
     ride = db.get(Ride, ride_id)
+    if driver.require_pin:
+        ride.start_pin = extras.four_digits()
     driver.driver_status = "busy"
     _event(db, ride.id, "ride_accepted", {"driver_id": str(driver.id)})
     audit(db, actor.id, "ride_accepted", {"ride_id": str(ride.id)})
@@ -615,12 +648,12 @@ def counter_offer(db: Session, user: User, offer_id: UUID, amount: Decimal) -> d
     if request.status not in OPEN_REQUEST or offer.status != "pending":
         raise AppError(409, "Esta solicitud ya no está disponible")
     _ensure_driver_available(db, driver)
-    floor = request.estimated_fare
+    floor = request.min_fare or request.estimated_fare
     if floor is None:
         raise AppError(409, "Esta solicitud no admite contraoferta")
     amount = amount.quantize(Decimal("0.01"))
-    if amount == floor:
-        raise AppError(400, "Para cobrar la tarifa mínima, acepta el viaje")
+    if amount == request.estimated_fare:
+        raise AppError(400, "Para cobrar ese precio, acepta el viaje")
     if amount < floor:
         raise AppError(400, f"El precio no puede ser menor a la tarifa mínima de ${floor}")
     offer.status = "countered"
@@ -696,7 +729,7 @@ def reject_offer(db: Session, user: User, offer_id: UUID, pause_minutes: int | N
     return {"status": "rejected"}
 
 
-def _owned_ride(db: Session, user: User, ride_id: UUID, *, driver_only: bool = False) -> tuple[Ride, Driver | None, Passenger | None]:
+def owned_ride(db: Session, user: User, ride_id: UUID, *, driver_only: bool = False) -> tuple[Ride, Driver | None, Passenger | None]:
     ride = db.scalar(select(Ride).where(Ride.id == ride_id).with_for_update())
     if ride is None:
         raise AppError(404, "No encontramos el viaje")
@@ -716,7 +749,7 @@ def _owned_ride(db: Session, user: User, ride_id: UUID, *, driver_only: bool = F
 
 
 def _move(db: Session, user: User, ride_id: UUID, status: str, event_type: str) -> dict:
-    ride, driver, _passenger = _owned_ride(db, user, ride_id, driver_only=True)
+    ride, driver, _passenger = owned_ride(db, user, ride_id, driver_only=True)
     if ride.status == status:
         # Un segundo toque o un reintento por red lenta: el viaje ya está donde se pidió.
         return present_ride(db, ride)
@@ -741,12 +774,14 @@ def mark_arrived(db: Session, user: User, ride_id: UUID) -> dict:
     return _move(db, user, ride_id, "driver_arrived", "driver_arrived")
 
 
-def start_ride(db: Session, user: User, ride_id: UUID) -> dict:
+def start_ride(db: Session, user: User, ride_id: UUID, pin: str | None = None) -> dict:
+    ride, _driver, _passenger = owned_ride(db, user, ride_id, driver_only=True)
+    extras.check_start_pin(ride, pin)
     return _move(db, user, ride_id, "in_progress", "ride_started")
 
 
 def mark_stop_arrived(db: Session, user: User, ride_id: UUID) -> dict:
-    ride, _driver, _passenger = _owned_ride(db, user, ride_id, driver_only=True)
+    ride, _driver, _passenger = owned_ride(db, user, ride_id, driver_only=True)
     request = db.get(RideRequest, ride.ride_request_id)
     stops = request.stops if request else []
     if ride.status != "in_progress" or ride.current_stop_index >= len(stops):
@@ -761,7 +796,7 @@ def mark_stop_arrived(db: Session, user: User, ride_id: UUID) -> dict:
 
 
 def continue_after_stop(db: Session, user: User, ride_id: UUID) -> dict:
-    ride, _driver, _passenger = _owned_ride(db, user, ride_id, driver_only=True)
+    ride, _driver, _passenger = owned_ride(db, user, ride_id, driver_only=True)
     request = db.get(RideRequest, ride.ride_request_id)
     stops = request.stops if request else []
     if ride.status != "in_progress" or ride.current_stop_index >= len(stops) or not ride.stop_arrived:
@@ -774,14 +809,17 @@ def continue_after_stop(db: Session, user: User, ride_id: UUID) -> dict:
     return present_ride(db, ride)
 
 
-def complete_ride(db: Session, user: User, ride_id: UUID, fare_amount, payment_method: str) -> dict:
-    ride, driver, passenger = _owned_ride(db, user, ride_id, driver_only=True)
+def complete_ride(
+    db: Session, user: User, ride_id: UUID, fare_amount, payment_method: str, delivery_code: str | None = None
+) -> dict:
+    ride, driver, passenger = owned_ride(db, user, ride_id, driver_only=True)
     if "completed" not in TRANSITIONS.get(ride.status, set()):
         raise AppError(409, "Este viaje no se puede finalizar")
     now = utcnow()
     request = db.get(RideRequest, ride.ride_request_id)
     if request and ride.current_stop_index < len(request.stops):
         raise AppError(409, "Completa las paradas antes de finalizar")
+    extras.check_delivery(ride, request, delivery_code)
     ride.status = "completed"
     ride.completed_at = now
     from decimal import Decimal
@@ -811,7 +849,7 @@ def complete_ride(db: Session, user: User, ride_id: UUID, fare_amount, payment_m
 
 
 def cancel_ride(db: Session, user: User, ride_id: UUID) -> dict:
-    ride, driver, passenger = _owned_ride(db, user, ride_id)
+    ride, driver, passenger = owned_ride(db, user, ride_id)
     if ride.status in {"completed", "cancelled"}:
         raise AppError(409, "Este viaje ya terminó")
     ride.status = "cancelled"
@@ -831,9 +869,10 @@ def cancel_ride(db: Session, user: User, ride_id: UUID) -> dict:
 
 
 def get_ride(db: Session, user: User, ride_id: UUID) -> dict:
-    ride, _driver, _passenger = _owned_ride(db, user, ride_id)
+    ride, _driver, _passenger = owned_ride(db, user, ride_id)
     db.commit()
-    return present_ride(db, ride)
+    view = present_ride(db, ride)
+    return view | extras.passenger_extras(db, ride) if user.role == "passenger" else view
 
 
 def get_request(db: Session, user: User, request_id: UUID) -> dict:
@@ -848,7 +887,7 @@ def active_for_passenger(db: Session, user: User) -> dict | None:
     passenger = passenger_for_user(db, user)
     ride = _active_ride_for_passenger(db, passenger.id)
     if ride:
-        return {"ride": present_ride(db, ride), "request": None}
+        return {"ride": present_ride(db, ride) | extras.passenger_extras(db, ride), "request": None}
     request = _open_request(db, passenger.id)
     if request:
         return {"ride": None, "request": present_request(db, request)}
@@ -951,7 +990,7 @@ def history_for_driver(db: Session, user: User) -> list[dict]:
 
 
 def rate_ride(db: Session, user: User, ride_id: UUID, score: int, comment: str | None) -> dict:
-    ride, driver, passenger = _owned_ride(db, user, ride_id)
+    ride, driver, passenger = owned_ride(db, user, ride_id)
     if ride.status != "completed":
         raise AppError(409, "El viaje todavía no termina")
     if user.role == "passenger":

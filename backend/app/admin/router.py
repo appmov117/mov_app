@@ -28,7 +28,7 @@ from app.core.deps import require_role
 from app.core.errors import AppError
 from app.core.support import audit
 from app.db.session import get_db
-from app.rides.pricing import set_tariffs, tariffs
+from app.rides.pricing import set_surcharges, set_tariffs, surcharges, tariffs
 from app.users.models import User
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
@@ -260,3 +260,39 @@ def update_tariffs(data: TariffsIn, user: User = Depends(require_role("admin")),
 @router.get("/motos")
 def motos(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
     return moto_overview(db)
+
+
+CLOCK = r"^([01]\d|2[0-3]):[0-5]\d$"
+
+
+class BandIn(BaseModel):
+    start: str = Field(pattern=CLOCK)
+    end: str = Field(pattern=CLOCK)
+    percent: int = Field(ge=1, le=200)
+    label: str = Field(min_length=1, max_length=40)
+
+
+class SpecialIn(BaseModel):
+    active: bool
+    percent: int = Field(ge=0, le=200)
+    label: str = Field(min_length=1, max_length=40)
+
+
+class SurchargesIn(BaseModel):
+    bands: list[BandIn] = Field(max_length=6)
+    special: SpecialIn
+
+
+@router.get("/surcharges")
+def get_surcharges(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return surcharges(db)
+
+
+@router.put("/surcharges")
+def update_surcharges(data: SurchargesIn, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    if any(band.start == band.end for band in data.bands):
+        raise AppError(400, "Una franja debe tener distinta hora de inicio y fin")
+    values = set_surcharges(db, data.model_dump())
+    audit(db, user.id, "surcharges_updated", values)
+    db.commit()
+    return values

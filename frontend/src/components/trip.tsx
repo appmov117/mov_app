@@ -7,6 +7,7 @@ type Rating = { rating: number; comment: string | null } | null;
 export type TripRide = {
   id: string;
   status: string;
+  has_delivery_photo?: boolean;
   origin: Pin;
   destination: Pin;
   origin_label: string | null;

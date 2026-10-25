@@ -2,6 +2,7 @@ from uuid import UUID
 
 from app.config.settings import settings
 from app.core.support import read_point
+from app.rides.pricing import vehicle_of
 from app.rides.ranking import Candidate
 from sqlalchemy import bindparam, text
 from sqlalchemy.dialects.postgresql import ARRAY
@@ -126,7 +127,7 @@ def find_candidates(
 ) -> list[Candidate]:
     """Conductores disponibles dentro del radio: favoritos primero y luego por distancia en línea recta.
 
-    Solo entran los que tienen el vehículo del servicio pedido; un paquete lo lleva auto o moto.
+    Solo entran los que tienen el vehículo del servicio pedido (un envío en moto, solo motos).
     Quien tiene zona de trabajo activa solo entra si el viaje encaja con ella (ver WORK_ZONE).
     """
     if not excluded:
@@ -165,7 +166,7 @@ def find_candidates(
                     WHERE o.driver_id = d.id AND o.status = 'countered'
                   )
               AND NOT (d.id = ANY(:excluded))
-              AND (:service = 'paquete' OR {VEHICLE_KIND} = :service)
+              AND {VEHICLE_KIND} = :vehicle
               AND {WORK_ZONE.format(pos="dl.location")}
             ORDER BY
               CASE WHEN d.id = ANY(:favorites) THEN 0 ELSE 1 END,
@@ -182,7 +183,7 @@ def find_candidates(
             "radius": radius_m,
             "excluded": excluded,
             "favorites": favorites,
-            "service": service,
+            "vehicle": vehicle_of(service),
             "dest_lat": destination["latitude"],
             "dest_lng": destination["longitude"],
             "lim": limit,
@@ -242,7 +243,7 @@ def find_finishing(
                     WHERE o.driver_id = d.id AND o.status = 'countered'
                   )
               AND NOT (d.id = ANY(:excluded))
-              AND (:service = 'paquete' OR {VEHICLE_KIND} = :service)
+              AND {VEHICLE_KIND} = :vehicle
               AND {WORK_ZONE.format(pos="r.destination")}
             ORDER BY end_to_pickup_m
             LIMIT :lim
@@ -253,7 +254,7 @@ def find_finishing(
             "lng": longitude,
             "radius": radius_m,
             "excluded": excluded,
-            "service": service,
+            "vehicle": vehicle_of(service),
             "dest_lat": destination["latitude"],
             "dest_lng": destination["longitude"],
             "lim": limit,

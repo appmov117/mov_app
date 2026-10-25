@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     zone_name: str = "Centro de Mérida"
     zone_lat: float = 20.9674
     zone_lng: float = -89.5926
+    # Mérida usa UTC-6 todo el año; los recargos por horario se evalúan en esta hora local.
+    zone_utc_offset_hours: int = -6
     seed: bool = True
     testing: bool = False
     location_min_interval_s: float = 3

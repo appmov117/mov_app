@@ -22,7 +22,7 @@ def moto_overview(db: Session) -> dict:
     ).all()
     week = utcnow() - timedelta(days=7)
     completed = select(Ride).join(RideRequest, RideRequest.id == Ride.ride_request_id).where(
-        RideRequest.service == "moto", Ride.status == "completed", Ride.completed_at >= week
+        RideRequest.service.in_(("moto", "paquete_moto")), Ride.status == "completed", Ride.completed_at >= week
     )
     count = db.scalar(select(func.count()).select_from(completed.subquery())) or 0
     volume = db.scalar(select(func.coalesce(func.sum(completed.subquery().c.fare_amount), 0)))

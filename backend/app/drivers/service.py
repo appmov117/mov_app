@@ -6,6 +6,7 @@ from app.complaints.models import Complaint
 from app.core import storage
 from app.core.errors import AppError
 from app.core.support import money, track, utcnow
+from app.drivers.amenities import amenities_of
 from app.drivers.models import Driver, DriverDocument, DriverSession
 from app.drivers.onboarding import DOC_KINDS
 from app.memberships.service import require_active_membership
@@ -33,6 +34,8 @@ def update_profile(db: Session, user: User, name: str | None) -> dict:
         "rating": float(driver.rating),
         "completed_rides": driver.completed_rides,
         "cancelled_rides": driver.cancelled_rides,
+        "require_pin": driver.require_pin,
+        "amenities": amenities_of(driver),
     }
 
 

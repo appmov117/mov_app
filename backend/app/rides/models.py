@@ -21,6 +21,13 @@ class RideRequest(Base):
     route_geometry: Mapped[dict | None] = mapped_column(JSONB)
     stops: Mapped[list] = mapped_column(JSONB, default=list)
     service: Mapped[str] = mapped_column(Text, default="auto")
+    # Tarifa mínima calculada; estimated_fare puede ser el precio que propuso el pasajero.
+    min_fare: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    surcharge_percent: Mapped[int] = mapped_column(Integer, default=0)
+    surcharge_label: Mapped[str | None] = mapped_column(Text)
+    # Paquetería: qué se envía y quién recibe; el código lo da quien recibe al entregar.
+    package: Mapped[dict | None] = mapped_column(JSONB)
+    delivery_code: Mapped[str | None] = mapped_column(Text)
     wave: Mapped[int] = mapped_column(Integer, default=0)
     wave_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(Text, default="searching")
@@ -62,6 +69,8 @@ class Ride(Base):
     status: Mapped[str] = mapped_column(Text)
     current_stop_index: Mapped[int] = mapped_column(Integer, default=0)
     stop_arrived: Mapped[bool] = mapped_column(Boolean, default=False)
+    start_pin: Mapped[str | None] = mapped_column(Text)
+    delivery_photo_key: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

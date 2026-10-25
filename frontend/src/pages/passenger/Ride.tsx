@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
 import { ChatButton } from "../../components/RideChat.tsx";
 import { TripProgress } from "../../components/TripProgress.tsx";
+import { AmenityIcons, DeliveryCode, PayoutCard, StartPin, type Amenities, type PackageInfo, type Payout } from "../../components/TripCodes.tsx";
 import { SafetySheet, elapsed, shareTrip } from "../../components/SafetySheet.tsx";
 import { Shell } from "../../components/Shell.tsx";
 import { Loading } from "../../components/ui/loading.tsx";
@@ -19,7 +20,7 @@ import { RecentTrip } from "./RecentTrip.tsx";
 import { useSafetyRecorder } from "../../lib/useSafetyRecorder.ts";
 
 type Vehicle = { brand: string; model: string; color: string | null; plate: string };
-type Driver = { id: string; name: string; phone: string | null; rating: number; vehicle: Vehicle | null; location: Pin | null };
+type Driver = { id: string; name: string; phone: string | null; rating: number; vehicle: Vehicle | null; location: Pin | null; amenities?: Amenities };
 type Ride = {
   id: string;
   status: string;
@@ -36,6 +37,11 @@ type Ride = {
   distance_m: number | null;
   duration_s: number | null;
   driver: Driver | null;
+  /** Solo los ve el pasajero: código para iniciar, código de entrega y CLABE del conductor. */
+  start_pin?: string | null;
+  delivery_code?: string | null;
+  driver_payout?: Payout | null;
+  package?: PackageInfo | null;
   rating: { rating: number; comment: string | null } | null;
   passenger_rating?: { rating: number; comment: string | null } | null;
   driver_rating?: { rating: number; comment: string | null } | null;
@@ -64,7 +70,7 @@ type CounterOffer = {
   seconds_left: number;
   pickup_eta_s: number | null;
   pickup_by_road: boolean;
-  driver: { name: string; rating: number; vehicle: { brand: string; model: string; color: string; plate: string } | null };
+  driver: { name: string; rating: number; vehicle: { brand: string; model: string; color: string; plate: string } | null; amenities?: Amenities };
 };
 type Active = { request: RequestView | null; ride: Ride | null };
 type LegRoute = {
@@ -375,6 +381,8 @@ export function PassengerRide() {
               {firstName(ride.driver.name)} {driverStatus}
             </p>
             <DriverCard driver={ride.driver} />
+            {ride.start_pin && <StartPin pin={ride.start_pin} />}
+            {ride.delivery_code && <DeliveryCode code={ride.delivery_code} parcel={ride.package ?? null} />}
             <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-semibold">
               <a className="grid justify-items-center gap-1 rounded-2xl bg-foam py-3" href={ride.driver.phone ? `tel:${ride.driver.phone}` : undefined}>
                 <Phone size={18} /> Llamar
@@ -407,6 +415,8 @@ export function PassengerRide() {
             <p className="text-lg font-extrabold">{shortLabel(ride?.destination_label)}</p>
             <p className="mt-3 text-sm text-muted">Tarifa aproximada</p>
             <p className="text-2xl font-extrabold">{pesos(fare)}</p>
+            {ride?.delivery_code && <DeliveryCode code={ride.delivery_code} parcel={ride.package ?? null} />}
+            {ride?.driver_payout && <PayoutCard payout={ride.driver_payout} />}
             {ride?.driver && (
               <>
                 <DriverCard driver={ride.driver} />
@@ -483,6 +493,7 @@ function CounterOffers({ offers, fare }: { offers: CounterOffer[]; fare: number 
                   {vehicle ? `${vehicle.brand} ${vehicle.model} · ` : ""}
                   {offer.pickup_eta_s != null ? `llega en ${offer.pickup_by_road ? "" : "≈ "}${Math.max(1, Math.round(offer.pickup_eta_s / 60))} min` : "cerca de ti"}
                 </span>
+                <AmenityIcons amenities={offer.driver.amenities} className="mt-1.5 [&>li]:h-6 [&>li]:w-6" />
               </span>
               <span className="text-right">
                 <span className="block text-lg font-extrabold">{pesos(offer.proposed_fare)}</span>
@@ -539,6 +550,7 @@ function DriverCard({ driver }: { driver: Driver }) {
           <span className="block text-sm text-muted">★ {driver.rating.toFixed(1)} · Conductor verificado</span>
         </span>
       </div>
+      <AmenityIcons amenities={driver.amenities} className="mt-3" />
       {vehicle && (
         <div className="mt-3 flex items-center gap-3 rounded-xl bg-foam px-3 py-2.5">
           <span

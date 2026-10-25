@@ -8,7 +8,7 @@ import { RouteMap, Timeline, type TripRide } from "../components/trip.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Loading } from "../components/ui/loading.tsx";
 import { Stars } from "../components/ui/stars.tsx";
-import { api } from "../lib/api.ts";
+import { api, apiBlob } from "../lib/api.ts";
 import { initials, pesos, splitLabel, statusLabel, when } from "../lib/format.ts";
 
 type Role = "passenger" | "driver";
@@ -102,6 +102,8 @@ function Detail({ ride, role, onReceipt }: { ride: TripRide; role: Role; onRecei
           <ReceiptText size={18} aria-hidden="true" /> Recibo
         </Button>
       )}
+
+      {ride.has_delivery_photo && <DeliveryPhoto rideId={ride.id} />}
 
       <div className="mt-4">
         <Timeline ride={ride} />
@@ -303,5 +305,24 @@ function ReportForm({ rideId, role, safety }: { rideId: string; role: Role; safe
         {send.isPending ? "Enviando" : "Enviar reporte"}
       </Button>
     </div>
+  );
+}
+
+/** Foto con que el conductor comprobó la entrega del paquete. */
+function DeliveryPhoto({ rideId }: { rideId: string }) {
+  const photo = useQuery({
+    queryKey: ["delivery-photo", rideId],
+    staleTime: Infinity,
+    queryFn: async () => URL.createObjectURL(await apiBlob(`/api/v1/rides/${rideId}/delivery-photo`)),
+  });
+  return (
+    <section className="mt-4">
+      <p className="text-sm font-semibold">Foto de la entrega</p>
+      {photo.data ? (
+        <img src={photo.data} alt="Paquete entregado" className="mt-2 max-h-72 w-full rounded-2xl object-cover" />
+      ) : (
+        <p className="mt-1 text-sm text-muted">{photo.error ? "No se pudo cargar la foto" : "Cargando foto"}</p>
+      )}
+    </section>
   );
 }

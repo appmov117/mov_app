@@ -28,8 +28,12 @@ type Offer = {
   trip_distance_m: number | null;
   estimated_fare: number | null;
   status: "pending" | "countered";
-  service: "auto" | "moto" | "paquete";
+  service: "auto" | "moto" | "paquete" | "paquete_moto";
   route: { coordinates: number[][] } | null;
+  package: { description: string; recipient_name: string } | null;
+  surcharge_label: string | null;
+  /** El pasajero puso su precio: puede ser menor que la tarifa mínima. */
+  passenger_offered: boolean;
   /** Tarifa mínima del viaje: el conductor puede cobrarla o proponer un precio mayor. */
   min_counter_fare: number | null;
   proposed_fare: number | null;
@@ -41,7 +45,7 @@ type Membership = { status: string; days_remaining: number };
 /** Centro de Mérida, mientras llega la primera lectura del GPS. */
 const center: Pin = { latitude: 20.9674, longitude: -89.5926 };
 const offerSeconds = 20;
-const SERVICE_NAMES = { auto: "Auto", moto: "Moto", paquete: "Paquete" };
+const SERVICE_NAMES = { auto: "Auto", moto: "Moto", paquete: "Paquete en carro", paquete_moto: "Paquete en moto" };
 
 export function DriverHome() {
   const navigate = useNavigate();
@@ -147,7 +151,9 @@ export function DriverHome() {
               <h1 className="text-lg font-bold text-white/80">{offer.after_current_ride ? "Siguiente viaje" : "Nueva solicitud"}</h1>
               <p className="mt-1 text-5xl font-extrabold tracking-tight">{pesos(offer.estimated_fare)}</p>
               <p className="mt-1 text-sm text-white/70">
-                Tarifa mínima · {SERVICE_NAMES[offer.service]} · {km(offer.trip_distance_m)} de viaje
+                {offer.passenger_offered ? `Precio del pasajero · mínima ${pesos(offer.min_counter_fare)}` : "Tarifa mínima"} ·{" "}
+                {SERVICE_NAMES[offer.service]} · {km(offer.trip_distance_m)}
+                {offer.surcharge_label ? ` · ${offer.surcharge_label}` : ""}
               </p>
             </div>
             <Countdown seconds={seconds} total={offerSeconds} />
@@ -158,6 +164,11 @@ export function DriverHome() {
               <RouteStop color="bg-white/50" place={`${offer.stop_count} ${offer.stop_count === 1 ? "parada" : "paradas"} en el camino`} />
             )}
             <RouteStop color="bg-[#f87171]" square place={offer.destination_label?.split(" · ")[0] ?? "Destino"} />
+            {offer.package && (
+              <li className="truncate border-t border-white/10 pt-1.5 text-xs text-white/70">
+                Envío: {offer.package.description} · para {offer.package.recipient_name}
+              </li>
+            )}
           </ol>
           <div className="relative mx-5 mt-4 min-h-[140px] flex-1 overflow-hidden rounded-2xl">
             <MapView

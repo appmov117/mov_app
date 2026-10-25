@@ -4,6 +4,7 @@ import { Button } from "../../components/ui/button.tsx";
 import { Field, Input } from "../../components/ui/input.tsx";
 import { api } from "../../lib/api.ts";
 import { pesos } from "../../lib/format.ts";
+import { Surcharges } from "./Surcharges.tsx";
 import { Page, Panel } from "./ui.tsx";
 
 export type Tariff = { base: number; per_km: number };
@@ -49,7 +50,7 @@ export function Tariffs() {
   return (
     <Page
       title="Tarifas"
-      description="Tarifa mínima de cada viaje: banderazo más el costo por kilómetro de la ruta. El conductor puede cobrarla o proponer un precio mayor, nunca menor."
+      description="Tarifa mínima de cada viaje: banderazo más el costo por kilómetro de la ruta. El conductor nunca cobra menos; el pasajero puede ofrecer hasta 20 % menos y el conductor decide si acepta."
     >
       <form
         onSubmit={(event) => {
@@ -89,7 +90,7 @@ export function Tariffs() {
               {values && (
                 <p className="border-t border-line px-5 py-3 text-sm text-muted">
                   Ejemplos: {SAMPLE_KM.map((distance) => `${distance} km ${pesos(tripPrice(values[id], distance))}`).join(" · ")}
-                  {id === "auto" && ` · Paquete de 5 km ${pesos(tripPrice(values.auto, 5) * PACKAGE_FACTOR)}`}
+                  {` · Paquete de 5 km ${pesos(tripPrice(values[id], 5) * PACKAGE_FACTOR)}`}
                 </p>
               )}
             </Panel>
@@ -104,10 +105,11 @@ export function Tariffs() {
               ? save.error instanceof Error ? save.error.message : "No se pudieron guardar"
               : save.isSuccess && !draft
                 ? "Guardadas. Las solicitudes nuevas ya usan estas tarifas."
-                : "Los paquetes se cobran al 70 % de la tarifa de auto."}
+                : "Los paquetes se cobran al 70 % de la tarifa de su vehículo, en carro o en moto."}
           </p>
         </div>
       </form>
+      <Surcharges />
     </Page>
   );
 }

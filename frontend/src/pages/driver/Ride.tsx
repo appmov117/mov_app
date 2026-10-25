@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, CornerUpLeft, CornerUpRight, LocateFixed, MapPin, MapPinned, MessageCircle, Navigation, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DeliveryProof } from "../../components/DeliveryProof.tsx";
 import { MapView, type Pin } from "../../components/MapView.tsx";
 import { LocationNotice } from "../../components/DriverNotices.tsx";
 import { ChatButton } from "../../components/RideChat.tsx";
@@ -22,6 +23,11 @@ import { PANEL_OFFSET, useWide } from "../../lib/useWide.ts";
 type Ride = {
   id: string;
   status: string;
+  service?: string;
+  package?: { description: string; recipient_name: string; recipient_phone: string } | null;
+  /** El conductor activó el código: hay que pedírselo al pasajero para iniciar. */
+  pin_required?: boolean;
+  has_delivery_photo?: boolean;
   origin: Pin;
   destination: Pin;
   origin_label: string | null;
@@ -74,13 +80,22 @@ export function DriverRide() {
   const [follow, setFollow] = useState(true);
   const [recenterToken, setRecenterToken] = useState(0);
   const startedNav = useRef<string | null>(null);
+  const [pin, setPin] = useState("");
+  const [deliveryCode, setDeliveryCode] = useState("");
   const action = useMutation({
     mutationFn: async (path: string) => {
       if (path === "complete") {
         return api<Ride>(`/api/v1/rides/${ride.data?.id}/complete`, {
           method: "POST",
-          body: JSON.stringify({ fare_amount: Number(fare || ride.data?.estimated_fare || 0), payment_method: method }),
+          body: JSON.stringify({
+            fare_amount: Number(fare || ride.data?.estimated_fare || 0),
+            payment_method: method,
+            delivery_code: deliveryCode || undefined,
+          }),
         });
+      }
+      if (path === "start" && ride.data?.pin_required) {
+        return api(`/api/v1/rides/${ride.data.id}/start`, { method: "POST", body: JSON.stringify({ pin }) });
       }
       return api(`/api/v1/rides/${ride.data?.id}/${path}`, { method: "POST" });
     },
@@ -320,6 +335,17 @@ export function DriverRide() {
             </a>
           </div>
         )}
+        {current.package && (
+          <div className="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-sm">
+            <p className="font-semibold">Envío: {current.package.description}</p>
+            <p className="text-white/70">
+              Recibe {current.package.recipient_name} ·{" "}
+              <a className="underline" href={`tel:${current.package.recipient_phone}`}>
+                {current.package.recipient_phone}
+              </a>
+            </p>
+          </div>
+        )}
         {going && !nextStop && asking && (
           <div className="mt-4 space-y-3">
             <p className="font-semibold">¿Cuánto cobraste?</p>
@@ -334,6 +360,7 @@ export function DriverRide() {
               {[
                 ["cash", "Efectivo"],
                 ["driver_terminal", "Terminal"],
+                ["transfer", "Transferencia"],
                 ["other", "Otro"],
               ].map(([id, label]) => (
                 <button key={id} className={`rounded-full px-3 py-2 ${method === id ? "bg-surface text-ink" : "bg-white/10"}`} onClick={() => setMethod(id)}>
@@ -341,7 +368,20 @@ export function DriverRide() {
                 </button>
               ))}
             </div>
-            <button className="h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60" disabled={action.isPending} onClick={() => action.mutate("complete")}>
+            {current.package && (
+              <DeliveryProof
+                rideId={current.id}
+                hasPhoto={Boolean(current.has_delivery_photo)}
+                code={deliveryCode}
+                onCode={setDeliveryCode}
+                onUploaded={() => queryClient.invalidateQueries({ queryKey: ["driver-active"] })}
+              />
+            )}
+            <button
+              className="h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60"
+              disabled={action.isPending || (Boolean(current.package) && (!current.has_delivery_photo || deliveryCode.length !== 4))}
+              onClick={() => action.mutate("complete")}
+            >
               {action.isPending ? "Finalizando" : "Registrar cobro y finalizar"}
             </button>
           </div>
@@ -360,8 +400,22 @@ export function DriverRide() {
             Finalizar viaje
           </button>
         )}
+        {!going && step === "start" && current.pin_required && (
+          <input
+            inputMode="numeric"
+            value={pin}
+            placeholder="Código de seguridad del pasajero"
+            aria-label="Código de seguridad del pasajero"
+            className="mt-4 h-12 w-full rounded-2xl bg-surface px-3 text-center text-lg font-bold tracking-[0.3em] text-ink placeholder:text-sm placeholder:font-normal placeholder:tracking-normal"
+            onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+          />
+        )}
         {!going && step && (
-          <button className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60" disabled={action.isPending} onClick={() => action.mutate(step)}>
+          <button
+            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60"
+            disabled={action.isPending || (step === "start" && Boolean(current.pin_required) && pin.length !== 4)}
+            onClick={() => action.mutate(step)}
+          >
             {action.isPending ? "Un momento" : stepLabel}
           </button>
         )}

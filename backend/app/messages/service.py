@@ -5,14 +5,14 @@ from app.core.support import utcnow
 from app.core.ws import driver_room, passenger_room, publish
 from app.messages.models import RideMessage
 from app.notifications.service import notify
-from app.rides.service import ACTIVE_RIDE, _owned_ride
+from app.rides.service import ACTIVE_RIDE, owned_ride
 from app.users.models import User
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 
 def _thread_owner(db: Session, user: User, ride_id: UUID):
-    ride, driver, passenger = _owned_ride(db, user, ride_id)
+    ride, driver, passenger = owned_ride(db, user, ride_id)
     if user.role not in {"passenger", "driver"}:
         raise AppError(403, "Este viaje no es tuyo")
     return ride, driver, passenger

@@ -14,6 +14,7 @@ const AdminHome = lazy(() => import("./pages/admin/Admin.tsx").then((module) => 
 const DriverHome = lazy(() => import("./pages/driver/Home.tsx").then((module) => ({ default: module.DriverHome })));
 const MembershipPage = lazy(() => import("./pages/driver/Membership.tsx").then((module) => ({ default: module.MembershipPage })));
 const DriverDemand = lazy(() => import("./pages/driver/Demand.tsx").then((module) => ({ default: module.DriverDemand })));
+const DriverPayout = lazy(() => import("./pages/driver/Payout.tsx").then((module) => ({ default: module.DriverPayout })));
 const DriverWorkZone = lazy(() => import("./pages/driver/WorkZone.tsx").then((module) => ({ default: module.DriverWorkZone })));
 const DriverDocuments = lazy(() => import("./pages/driver/Documents.tsx").then((module) => ({ default: module.DriverDocuments })));
 const DriverProfile = lazy(() => import("./pages/driver/Profile.tsx").then((module) => ({ default: module.DriverProfile })));
@@ -61,6 +62,7 @@ export default function App() {
         <Route path="/conductor/viajes/:id" element={<Gate role="driver"><TripDetail role="driver" /></Gate>} />
         <Route path="/conductor/demanda" element={<Gate role="driver"><DriverDemand /></Gate>} />
         <Route path="/conductor/zona" element={<Gate role="driver"><DriverWorkZone /></Gate>} />
+        <Route path="/conductor/pagos" element={<Gate role="driver"><DriverPayout /></Gate>} />
         <Route path="/conductor/documentos" element={<Gate role="driver"><DriverDocuments /></Gate>} />
         <Route path="/conductor/perfil" element={<Gate role="driver"><DriverProfile /></Gate>} />
         <Route path="/conductor/referidos" element={<Gate role="driver"><DriverReferral /></Gate>} />

@@ -3,6 +3,7 @@ from uuid import UUID
 from app.core.deps import require_role
 from app.db.session import get_db
 from app.drivers.demand import demand_for_driver
+from app.drivers.payout import get_payout, save_amenities, save_payout, set_require_pin
 from app.drivers.service import (
     complaints_received,
     go_offline,
@@ -38,6 +39,23 @@ class WorkZoneIn(BaseModel):
 
 class ActiveIn(BaseModel):
     active: bool
+
+
+class SecurityIn(BaseModel):
+    require_pin: bool
+
+
+class AmenitiesIn(BaseModel):
+    pets: bool = False
+    ac: bool = False
+    luggage: bool = False
+    card: bool = False
+
+
+class PayoutIn(BaseModel):
+    clabe: str = Field(pattern=r"^\d{18}$")
+    bank: str = Field(min_length=2, max_length=60)
+    holder: str = Field(min_length=3, max_length=100)
 
 
 class PauseIn(BaseModel):
@@ -136,3 +154,23 @@ def update_work_zone(data: WorkZoneIn, user: User = Depends(require_role("driver
 @router.patch("/work-zone")
 def toggle_work_zone(data: ActiveIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
     return set_active(db, user, data.active)
+
+
+@router.put("/security")
+def update_security(data: SecurityIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return set_require_pin(db, user, data.require_pin)
+
+
+@router.get("/payout")
+def payout(user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return get_payout(db, user)
+
+
+@router.put("/payout")
+def update_payout(data: PayoutIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return save_payout(db, user, data.clabe, data.bank, data.holder)
+
+
+@router.put("/amenities")
+def update_amenities(data: AmenitiesIn, user: User = Depends(require_role("driver")), db: Session = Depends(get_db)):
+    return save_amenities(db, user, data.model_dump())

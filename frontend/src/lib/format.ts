@@ -83,6 +83,7 @@ export function splitLabel(label: string | null | undefined) {
 
 export function payLabel(method: string | null | undefined) {
   if (method === "driver_terminal") return "Terminal del conductor";
+  if (method === "transfer") return "Transferencia";
   if (method === "other") return "Otro";
   return "Efectivo";
 }

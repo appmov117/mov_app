@@ -3,24 +3,10 @@ import { useRef, useState } from "react";
 import { api } from "../lib/api.ts";
 import { useAuth } from "../lib/auth.tsx";
 import { initials } from "../lib/format.ts";
+import { shrinkImage } from "../lib/image.ts";
 
 /** Lado de la foto que se sube: suficiente para el perfil y pesa unos 50 KB. */
 const SIZE = 512;
-
-/** Recorta al centro en cuadrado y reduce a JPEG antes de subir, para gastar pocos datos. */
-async function shrink(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file);
-  const side = Math.min(bitmap.width, bitmap.height);
-  const out = Math.min(SIZE, side);
-  const canvas = document.createElement("canvas");
-  canvas.width = out;
-  canvas.height = out;
-  canvas.getContext("2d")?.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, out, out);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo leer la foto"))), "image/jpeg", 0.82),
-  );
-}
 
 /** Foto de perfil con iniciales de respaldo; al tocarla se elige o se toma una foto nueva. */
 export function ProfilePhoto({ name }: { name?: string }) {
@@ -35,7 +21,7 @@ export function ProfilePhoto({ name }: { name?: string }) {
     setPending(true);
     try {
       const body = new FormData();
-      body.append("file", await shrink(file), "foto.jpg");
+      body.append("file", await shrinkImage(file, SIZE, true), "foto.jpg");
       await api("/api/v1/users/me/avatar", { method: "POST", body });
       await refreshUser();
     } catch (err) {

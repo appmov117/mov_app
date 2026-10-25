@@ -3,8 +3,8 @@ from datetime import datetime
 from decimal import Decimal
 
 from app.db.base import Base
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -19,6 +19,12 @@ class Driver(Base):
     completed_rides: Mapped[int] = mapped_column(Integer, default=0)
     cancelled_rides: Mapped[int] = mapped_column(Integer, default=0)
     paused_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Si es True, el pasajero recibe un código de 4 dígitos que el conductor escribe al iniciar.
+    require_pin: Mapped[bool] = mapped_column(Boolean, default=False)
+    # CLABE, banco y titular para que el pasajero pague por transferencia.
+    payout: Mapped[dict | None] = mapped_column(JSONB)
+    # Lo que acepta u ofrece: mascotas, aire acondicionado, equipaje grande, pago con tarjeta.
+    amenities: Mapped[dict | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

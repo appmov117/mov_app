@@ -22,6 +22,14 @@ type Recent = {
 type Place = { id: string; label: string; kind: string; latitude: number; longitude: number };
 
 /** Lo que ve el pasajero en /pasajero/viaje cuando no hay viaje activo: qué pasó con el último. */
+/** Servicio a partir de la etiqueta guardada en el destino ("Plaza · Paquete en moto"). */
+const SERVICE_TIERS: Record<string, TripPreset["tier"]> = {
+  Moto: "moto",
+  Paquete: "paquete",
+  "Paquete en carro": "paquete",
+  "Paquete en moto": "paquete_moto",
+};
+
 export function RecentTrip() {
   const navigate = useNavigate();
   const recent = useQuery({ queryKey: ["passenger-recent"], queryFn: () => api<Recent | null>("/api/v1/passengers/me/recent") });
@@ -36,7 +44,7 @@ export function RecentTrip() {
 
   const { place, service } = splitLabel(data.destination_label);
   const go = (preset: TripPreset) => navigate("/pasajero", { state: { preset } });
-  const again = () => go({ destination: data.destination, label: place, stops: data.stops, tier: service === "Paquete" ? "paquete" : service === "Moto" ? "moto" : "auto" });
+  const again = () => go({ destination: data.destination, label: place, stops: data.stops, tier: SERVICE_TIERS[service ?? ""] ?? "auto" });
   const view = outcomeView(data, place);
 
   return (

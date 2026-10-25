@@ -6,6 +6,7 @@ TRIP = {
     "origin_label": "Centro",
     "destination_label": "Destino",
 }
+PACKAGE = {"description": "Sobre con documentos", "recipient_name": "Rosa Pech", "recipient_phone": "9991234567"}
 
 
 def passenger(client) -> dict:
@@ -31,7 +32,7 @@ def test_moto_request_only_reaches_moto_drivers(client):
     assert received[0]["service"] == "moto"
 
 
-def test_car_request_skips_moto_drivers_and_package_reaches_both(client):
+def test_car_and_package_go_to_the_vehicle_that_was_chosen(client):
     admin = make_admin(client)
     car = ready_driver(client, "9996000020", "auto2@ruta.local", 20.9674, -89.5926, admin)
     moto = ready_driver(client, "9996000021", "moto2@ruta.local", 20.9675, -89.5927, admin, kind="moto")
@@ -41,8 +42,12 @@ def test_car_request_skips_moto_drivers_and_package_reaches_both(client):
     assert offers(client, moto) == []
 
     client.post(f"/api/v1/ride-requests/{created['id']}/cancel", headers=headers)
-    client.post("/api/v1/ride-requests", headers=headers, json=TRIP | {"service": "paquete"})
+    package = client.post("/api/v1/ride-requests", headers=headers, json=TRIP | {"service": "paquete", "package": PACKAGE})
     assert len(offers(client, car)) == 1
+    assert offers(client, moto) == []
+
+    client.post(f"/api/v1/ride-requests/{package.json()['id']}/cancel", headers=headers)
+    client.post("/api/v1/ride-requests", headers=headers, json=TRIP | {"service": "paquete_moto", "package": PACKAGE})
     assert len(offers(client, moto)) == 1
 
 
