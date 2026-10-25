@@ -36,7 +36,7 @@ export function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-foam px-5 py-6">
+    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col bg-foam px-5 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
       <Link to="/" aria-label="Volver" className="-ml-2 grid h-10 w-10 place-items-center rounded-full text-ink">
         <ChevronLeft size={24} />
       </Link>

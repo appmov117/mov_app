@@ -24,9 +24,11 @@ type Props = {
   scroll?: boolean;
   /** Pantallas de mapa: ocupan todo el ancho en tablet y escritorio en lugar de una columna centrada. */
   full?: boolean;
+  /** Color del pie de la pantalla, para que el espacio de la barra de inicio del iPhone no se note. */
+  footer?: "light" | "dark";
 };
 
-export function Shell({ children, nav = true, scroll = true, full = false }: Props) {
+export function Shell({ children, nav = true, scroll = true, full = false, footer = "light" }: Props) {
   const { user } = useAuth();
   const passenger = user?.role === "passenger";
   const driver = user?.role === "driver";
@@ -36,6 +38,8 @@ export function Shell({ children, nav = true, scroll = true, full = false }: Pro
       <main className={`relative flex min-h-0 flex-1 flex-col ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>
         {full ? children : <div className="flex min-h-0 flex-1 flex-col md:mx-auto md:w-full md:max-w-2xl">{children}</div>}
       </main>
+      {/* Sin barra de pestañas, este espacio deja los botones por encima de la barra de inicio del iPhone. */}
+      {!nav && <div className={`h-[env(safe-area-inset-bottom)] shrink-0 md:hidden ${footer === "dark" ? "bg-surface-dark" : "bg-surface"}`} aria-hidden="true" />}
       {nav && passenger && <TabBar items={passengerLinks} />}
       {nav && driver && <TabBar items={driverLinks} />}
       {driver && <DriverBeacon />}

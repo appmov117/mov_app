@@ -19,6 +19,7 @@ from app.rides.chaining import URBAN_MPS, finishing_candidates
 from app.rides.models import Ride, RideEvent, RideOffer, RideRequest
 from app.rides.ranking import MAX_CANDIDATES, Leg, order_candidates, pickup_legs
 from app.rides.zones import ensure_pickup_allowed
+from app.users.avatar import avatar_url
 from app.users.models import User
 from app.vehicles.models import Vehicle
 from sqlalchemy import func, select
@@ -165,6 +166,7 @@ def present_ride(db: Session, ride: Ride) -> dict:
         "driver": {
             "id": str(driver.id),
             "name": driver_user.name if driver_user else "",
+            "avatar_url": avatar_url(driver_user) if driver_user else None,
             "phone": driver_user.phone if driver_user else None,
             "rating": float(driver.rating),
             "vehicle": _vehicle(db, driver.id),
@@ -283,6 +285,7 @@ def _present_counters(db: Session, request: RideRequest) -> list[dict]:
                 "pickup_by_road": by_road,
                 "driver": {
                     "name": account.name,
+                    "avatar_url": avatar_url(account),
                     "rating": float(driver.rating),
                     "vehicle": _vehicle(db, driver.id),
                     "amenities": amenities_of(driver),

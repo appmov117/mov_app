@@ -30,7 +30,7 @@ export function SurchargeNotice({ surcharge }: { surcharge: { percent: number; l
 export function PackageForm({ value, onChange }: { value: PackageDetails; onChange: (value: PackageDetails) => void }) {
   const set = (key: keyof PackageDetails, text: string) => onChange({ ...value, [key]: text });
   return (
-    <div className="mt-3 space-y-3 rounded-2xl border border-line p-3">
+    <div className="mt-3 space-y-2">
       <Field label="¿Qué envías?">
         <Input value={value.description} maxLength={140} placeholder="Sobre con documentos" onChange={(event) => set("description", event.target.value)} />
       </Field>
@@ -47,7 +47,7 @@ export function PackageForm({ value, onChange }: { value: PackageDetails; onChan
           />
         </Field>
       </div>
-      <p className="text-xs text-muted">Al pedir te damos un código de 4 dígitos: compártelo con quien recibe. El conductor lo pide al entregar y toma una foto.</p>
+      <p className="text-xs text-muted">Te damos un código para quien recibe; el conductor lo pide al entregar y toma foto.</p>
     </div>
   );
 }
@@ -55,23 +55,17 @@ export function PackageForm({ value, onChange }: { value: PackageDetails; onChan
 /** "Pon tu precio": desde 20 % menos que la tarifa mínima; el conductor decide si acepta. */
 export function OfferPrice({ minimum, value, onChange }: { minimum: number; value: number | null; onChange: (value: number | null) => void }) {
   const floor = Math.ceil(minimum * 0.8);
-  if (value == null) {
-    return (
-      <button type="button" className="mt-3 w-full text-center text-sm font-semibold text-brand-strong underline" onClick={() => onChange(Math.round(minimum))}>
-        Pon tu precio
-      </button>
-    );
-  }
+  if (value == null) return null;
   const below = value < minimum;
   return (
-    <div className="mt-3 rounded-2xl border border-line p-3">
+    <div className="mb-2 rounded-2xl border border-line px-3 py-2">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Tu precio</span>
         <button type="button" className="text-xs font-semibold text-muted underline" onClick={() => onChange(null)}>
           Usar tarifa
         </button>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-3">
+      <div className="mt-1 flex items-center justify-between gap-3">
         <button
           type="button"
           aria-label="Bajar precio"

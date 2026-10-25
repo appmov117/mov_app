@@ -16,7 +16,7 @@ export function Landing() {
   if (user) return <Navigate to={HOME[user.role]} replace />;
   return (
     <div className="h-dvh overflow-hidden bg-surface">
-      <div className="mx-auto flex h-full max-w-6xl flex-col px-6 pb-6 pt-5 md:grid md:grid-cols-[1fr_1.1fr] md:items-center md:gap-12 md:px-10">
+      <div className="mx-auto flex h-full max-w-6xl flex-col px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-5 md:grid md:grid-cols-[1fr_1.1fr] md:items-center md:gap-12 md:px-10">
         <div className="flex min-h-0 flex-1 flex-col md:order-2 md:flex-none">
           <header className="flex items-center gap-2.5 md:hidden">
             <Logo />

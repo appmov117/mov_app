@@ -8,7 +8,7 @@ function LegalPage({ title, children }: { title: string; children: ReactNode }) 
   const navigate = useNavigate();
   return (
     <div className="h-dvh overflow-y-auto bg-surface">
-      <article className="mx-auto max-w-2xl px-5 py-8 text-[15px] leading-relaxed text-ink">
+      <article className="mx-auto max-w-2xl px-5 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom))] text-[15px] leading-relaxed text-ink">
         <button type="button" className="text-sm font-semibold underline" onClick={() => navigate(-1)}>
           Volver
         </button>

@@ -4,7 +4,7 @@ import Map, { type MapMouseEvent, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useCompass } from "../lib/compass.ts";
 import { distanceM } from "../lib/guidance.ts";
-import { tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
+import { applyStyleConfig, tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
 import { useMapRecovery } from "../lib/useMapRecovery.ts";
 
 export type Pin = { latitude: number; longitude: number };
@@ -69,6 +69,12 @@ export function MapView({
   // Listo solo cuando cargó el mapa actual: al recrearlo, los efectos se vuelven a conectar.
   const [loadedKey, setLoadedKey] = useState(-1);
   const ready = loadedKey === recovery.key;
+
+  // Un cambio de tema con el mapa abierto pasa de día a noche sin recrearlo.
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (map && ready) applyStyleConfig(map, mapStyle.config);
+  }, [mapStyle.config, ready]);
   // Sin destino, el punto azul ya marca dónde estás: el pin A encima solo estorba.
   const originIsMe = Boolean(!destination && me && origin && distanceM(origin, me) < 25);
   // Al ir por el pasajero, el destino de la navegación es la misma recogida: basta con el pin A.
@@ -304,6 +310,7 @@ export function MapView({
         onLoad={(event) => {
           recovery.watch(event.target);
           tuneStyle(event.target, mapStyle.url);
+          applyStyleConfig(event.target, mapStyle.config);
           setLoadedKey(recovery.key);
         }}
         onStyleData={() => mapRef.current && tuneStyle(mapRef.current.getMap(), mapStyle.url)}

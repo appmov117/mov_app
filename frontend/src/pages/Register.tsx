@@ -70,7 +70,7 @@ export function Register() {
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-[430px] bg-foam px-5 py-8">
+    <div className="mx-auto min-h-dvh max-w-[430px] bg-foam px-5 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom))]">
       <p className="font-display text-3xl text-ink">Crear cuenta</p>
       <div className="mt-5 grid grid-cols-2 gap-2">
         {(["passenger", "driver"] as const).map((item) => (

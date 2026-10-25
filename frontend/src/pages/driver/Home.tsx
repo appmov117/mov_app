@@ -130,7 +130,7 @@ export function DriverHome() {
 
   if (offer?.status === "countered") {
     return (
-      <Shell nav={false} full>
+      <Shell nav={false} full footer="dark">
         <CounterWaiting offer={offer} />
       </Shell>
     );
@@ -144,7 +144,7 @@ export function DriverHome() {
     const invalidCounter = counterAmount == null || minCounter == null || counterAmount < minCounter || counterAmount === estimated;
     const difference = counterAmount != null && estimated != null ? counterAmount - estimated : 0;
     return (
-      <Shell nav={false} full>
+      <Shell nav={false} full footer="dark">
         <div className="flex min-h-0 flex-1 flex-col bg-surface-dark text-white md:px-[max(0px,calc((100%-36rem)/2))]">
           <div className="flex items-start justify-between gap-4 px-5 pt-6">
             <div>

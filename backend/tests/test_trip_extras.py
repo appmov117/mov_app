@@ -164,3 +164,5 @@ def test_moto_delivery_uses_moto_tariff_and_amenities_show_on_profile(client):
     accept(client, driver)
     ride = client.get("/api/v1/passengers/me/active", headers=headers).json()["ride"]
     assert ride["driver"]["amenities"]["pets"] is True and ride["driver"]["amenities"]["ac"] is False
+    assert ride["driver"]["avatar_url"] is None
+    assert ride["driver"]["vehicle"]["year"] == 2021 and ride["driver"]["vehicle"]["kind"] == "auto"

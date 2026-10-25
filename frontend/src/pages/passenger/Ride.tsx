@@ -6,6 +6,7 @@ import { MapView, type Pin } from "../../components/MapView.tsx";
 import { ChatButton } from "../../components/RideChat.tsx";
 import { TripProgress } from "../../components/TripProgress.tsx";
 import { AmenityIcons, DeliveryCode, PayoutCard, StartPin, type Amenities, type PackageInfo, type Payout } from "../../components/TripCodes.tsx";
+import { DriverAvatar, DriverCard, type DriverVehicle } from "../../components/DriverCard.tsx";
 import { SafetySheet, elapsed, shareTrip } from "../../components/SafetySheet.tsx";
 import { Shell } from "../../components/Shell.tsx";
 import { Loading } from "../../components/ui/loading.tsx";
@@ -19,8 +20,17 @@ import { PANEL_OFFSET, useWide } from "../../lib/useWide.ts";
 import { RecentTrip } from "./RecentTrip.tsx";
 import { useSafetyRecorder } from "../../lib/useSafetyRecorder.ts";
 
-type Vehicle = { brand: string; model: string; color: string | null; plate: string };
-type Driver = { id: string; name: string; phone: string | null; rating: number; vehicle: Vehicle | null; location: Pin | null; amenities?: Amenities };
+type Vehicle = DriverVehicle;
+type Driver = {
+  id: string;
+  name: string;
+  phone: string | null;
+  rating: number;
+  avatar_url?: string | null;
+  vehicle: Vehicle | null;
+  location: Pin | null;
+  amenities?: Amenities;
+};
 type Ride = {
   id: string;
   status: string;
@@ -70,7 +80,7 @@ type CounterOffer = {
   seconds_left: number;
   pickup_eta_s: number | null;
   pickup_by_road: boolean;
-  driver: { name: string; rating: number; vehicle: { brand: string; model: string; color: string; plate: string } | null; amenities?: Amenities };
+  driver: { name: string; rating: number; avatar_url?: string | null; vehicle: Vehicle | null; amenities?: Amenities };
 };
 type Active = { request: RequestView | null; ride: Ride | null };
 type LegRoute = {
@@ -482,9 +492,7 @@ function CounterOffers({ offers, fare }: { offers: CounterOffer[]; fare: number 
         return (
           <article key={offer.id} className="rounded-2xl border border-line p-3">
             <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-foam text-sm font-extrabold text-ink">
-                {initials(offer.driver.name)}
-              </span>
+              <DriverAvatar driver={offer.driver} size="h-10 w-10 text-sm" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-bold">
                   {firstName(offer.driver.name)} · {offer.driver.rating.toFixed(1)} ★
@@ -520,60 +528,6 @@ function CounterOffers({ offers, fare }: { offers: CounterOffer[]; fare: number 
   );
 }
 
-const VEHICLE_COLORS: Record<string, string> = {
-  blanco: "#f8fafc",
-  negro: "#111827",
-  gris: "#9ca3af",
-  plata: "#cbd5e1",
-  plateado: "#cbd5e1",
-  rojo: "#dc2626",
-  azul: "#2563eb",
-  verde: "#16a34a",
-  amarillo: "#facc15",
-  naranja: "#f97316",
-  cafe: "#78350f",
-  café: "#78350f",
-  beige: "#e7d7b9",
-  vino: "#7f1d1d",
-  dorado: "#ca8a04",
-};
-
-function DriverCard({ driver }: { driver: Driver }) {
-  const vehicle = driver.vehicle;
-  const swatch = vehicle?.color ? VEHICLE_COLORS[vehicle.color.trim().toLowerCase()] : undefined;
-  return (
-    <div className="mt-3 rounded-2xl border border-line p-3">
-      <div className="flex items-center gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-foam font-extrabold text-ink">{initials(driver.name)}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate font-bold">{driver.name}</span>
-          <span className="block text-sm text-muted">★ {driver.rating.toFixed(1)} · Conductor verificado</span>
-        </span>
-      </div>
-      <AmenityIcons amenities={driver.amenities} className="mt-3" />
-      {vehicle && (
-        <div className="mt-3 flex items-center gap-3 rounded-xl bg-foam px-3 py-2.5">
-          <span
-            className="h-7 w-7 shrink-0 rounded-full border border-ink/15 shadow-inner"
-            style={{ background: swatch ?? "#e6e8ec" }}
-            aria-hidden="true"
-          />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold">{vehicle.brand} {vehicle.model}</span>
-            {vehicle.color && <span className="block text-xs capitalize text-muted">{vehicle.color}</span>}
-          </span>
-          <span className="rounded-md border-2 border-ink bg-surface px-2 py-0.5 font-mono text-base font-extrabold tracking-[0.15em]" aria-label={`Placa ${vehicle.plate}`}>
-            {vehicle.plate}
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function initials(name: string) {
-  return name.split(" ").slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-}
 function firstName(name: string) {
   return name.split(" ")[0];
 }

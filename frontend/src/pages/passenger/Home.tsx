@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, Car, Home as HomeIcon, LocateFixed, MapPin, Motorbike, Package, User as Person, Plane, Search, ShoppingBag, Star, UserRound, X } from "lucide-react";
+import { Briefcase, Car, ChevronLeft, ChevronRight, Home as HomeIcon, LocateFixed, MapPin, Motorbike, Package, User as Person, Plane, Search, ShoppingBag, Star, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
@@ -74,6 +74,8 @@ export function PassengerHome() {
   const [offered, setOffered] = useState<number | null>(null);
   const [parcel, setParcel] = useState(EMPTY_PACKAGE);
   const sending = tier === "paquete" || tier === "paquete_moto";
+  // Paquete abre su propia sección con el vehículo y los datos de quien recibe.
+  const packageStep = sending;
   const [focus, setFocus] = useState<Pin | null>(null);
   const [locating, setLocating] = useState(false);
   const [placing, setPlacing] = useState(false);
@@ -273,9 +275,9 @@ export function PassengerHome() {
     paquete_moto: estimate.data?.moto_package_fare ?? 0,
   };
   const options = [
-    { id: "auto" as const, name: "Auto", icon: Car, seats: 4, detail: "Viaje cómodo para ti y tus acompañantes" },
-    { id: "moto" as const, name: "Moto", icon: Motorbike, seats: 1, detail: "Más rápido entre el tráfico, con casco" },
-    { id: sending ? tier : ("paquete" as const), name: "Paquete", icon: Package, seats: 0, detail: "Envío con foto y código de entrega" },
+    { id: "auto" as const, name: "Auto", icon: Car, seats: 4, price: prices.auto, package: false },
+    { id: "moto" as const, name: "Moto", icon: Motorbike, seats: 1, price: prices.moto, package: false },
+    { id: "paquete" as const, name: "Paquete", icon: Package, seats: 0, price: Math.min(prices.paquete, prices.paquete_moto), package: true },
   ];
   const editingMap = placing || adjustingOrigin;
   const [hidden, setHidden] = useState<string[]>(readHidden);
@@ -513,112 +515,145 @@ export function PassengerHome() {
           </>
         )}
         {!adjustingOrigin && destination && (
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-[26px] font-extrabold tracking-tight">Elige tu viaje</h1>
-                <p className="text-sm text-muted">{shortLabel(destinationLabel)}{destinationDetail ? ` · ${destinationDetail}` : ""}</p>
-                <SurchargeNotice surcharge={estimate.data?.surcharge} />
-              </div>
-              <button
-                type="button"
-                className="text-sm font-semibold text-ink underline"
-                onClick={() => {
-                  setDestination(null);
-                  setWaypoints([]);
-                  setDrafts([]);
-                  setTier("auto");
-                }}
-              >
-                Cambiar
-              </button>
-            </div>
-            <div className="mt-3 space-y-2">
-              {options.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={tier === option.id}
-                  className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left ${tier === option.id ? "border-brand-strong bg-brand-soft" : "border-line bg-surface"}`}
-                  onClick={() => {
-                    setTier(option.id);
-                    setOffered(null);
-                  }}
-                >
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-foam text-ink/70">
-                    <option.icon size={18} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5 font-bold">
-                      {option.name}
-                      {option.seats > 0 && (
-                        <span className="flex items-center text-xs font-semibold text-muted" aria-label={`${option.seats} ${option.seats === 1 ? "pasajero" : "pasajeros"}`}>
-                          <Person size={12} aria-hidden="true" />
-                          {option.seats}
-                        </span>
-                      )}
-                    </span>
-                    <span className="block text-xs text-muted">
-                      {eta == null ? "Calculando ruta" : `Llegas ${arrivalClock(estimate.data!.duration_s)} · ${eta} min`}
-                    </span>
-                    {tier === option.id && <span className="mt-0.5 block text-xs text-muted">{option.detail}</span>}
-                  </span>
-                  <span className="text-lg font-extrabold">{estimate.data ? pesos(prices[option.id]) : "—"}</span>
-                </button>
-              ))}
-            </div>
-            {sending && (
-              <>
-                <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-foam p-1" role="radiogroup" aria-label="Vehículo del envío">
-                  {(["paquete", "paquete_moto"] as const).map((id) => (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-2 pt-3">
+              {packageStep ? (
+                <>
+                  <div className="flex items-center gap-2">
                     <button
-                      key={id}
                       type="button"
-                      role="radio"
-                      aria-checked={tier === id}
-                      className={`rounded-full py-2 text-sm font-semibold ${tier === id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
+                      aria-label="Volver a las opciones"
+                      className="grid h-9 w-9 place-items-center rounded-full bg-foam"
                       onClick={() => {
-                        setTier(id);
+                        setTier("auto");
                         setOffered(null);
                       }}
                     >
-                      {id === "paquete" ? "En carro" : "En moto"}
+                      <ChevronLeft size={20} />
                     </button>
-                  ))}
-                </div>
-                <PackageForm value={parcel} onChange={setParcel} />
-              </>
-            )}
-            {estimate.data && <OfferPrice minimum={prices[tier]} value={offered} onChange={setOffered} />}
-            {(requestRide.error ?? estimate.error) && (
-              <p className="mt-3 text-sm text-danger" role="alert">{((requestRide.error ?? estimate.error) as Error).message}</p>
-            )}
-            <button
-              type="button"
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-line py-3 text-sm font-semibold"
-              onClick={() => {
-                setDraftOrigin(origin);
-                setAdjustingOrigin(true);
-              }}
-            >
-              <MapPin size={17} /> Ajustar punto de encuentro
-            </button>
-            <Button
-              className="mt-4"
-              disabled={
-                !estimate.data ||
-                requestRide.isPending ||
-                (sending && !packageReady(parcel)) ||
-                (offered != null && offered < Math.ceil(prices[tier] * 0.8))
-              }
-              onClick={() => {
-                void enablePush().catch(() => undefined);
-                requestRide.mutate();
-              }}
-            >
-              {requestRide.isPending ? "Solicitando" : `Solicitar ${TIER_NAMES[tier].toLowerCase()}`}
-            </Button>
-            <p className="mt-3 text-center text-xs text-muted">El conductor puede aceptar tu precio o proponer otro. Pagas directo al conductor.</p>
+                    <h1 className="text-xl font-extrabold tracking-tight">Detalles del envío</h1>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-foam p-1" role="radiogroup" aria-label="Vehículo del envío">
+                    {(["paquete", "paquete_moto"] as const).map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-checked={tier === id}
+                        className={`flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-semibold ${tier === id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
+                        onClick={() => {
+                          setTier(id);
+                          setOffered(null);
+                        }}
+                      >
+                        {id === "paquete" ? <Car size={15} aria-hidden="true" /> : <Motorbike size={15} aria-hidden="true" />}
+                        {id === "paquete" ? "En carro" : "En moto"} · {estimate.data ? pesos(prices[id]) : "—"}
+                      </button>
+                    ))}
+                  </div>
+                  <PackageForm value={parcel} onChange={setParcel} />
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h1 className="text-xl font-extrabold tracking-tight">Elige tu viaje</h1>
+                      <p className="truncate text-sm text-muted">{shortLabel(destinationLabel)}{destinationDetail ? ` · ${destinationDetail}` : ""}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="shrink-0 text-sm font-semibold text-ink underline"
+                      onClick={() => {
+                        setDestination(null);
+                        setWaypoints([]);
+                        setDrafts([]);
+                        setTier("auto");
+                      }}
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                  <SurchargeNotice surcharge={estimate.data?.surcharge} />
+                  <div className="mt-2 space-y-1.5">
+                    {options.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        aria-pressed={tier === option.id}
+                        className={`flex w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left ${tier === option.id ? "border-brand-strong bg-brand-soft" : "border-line bg-surface"}`}
+                        onClick={() => {
+                          setTier(option.package ? "paquete" : option.id);
+                          setOffered(null);
+                        }}
+                      >
+                        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-foam text-ink/70">
+                          <option.icon size={18} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5 font-bold">
+                            {option.name}
+                            {option.seats > 0 && (
+                              <span className="flex items-center text-xs font-semibold text-muted" aria-label={`${option.seats} ${option.seats === 1 ? "pasajero" : "pasajeros"}`}>
+                                <Person size={12} aria-hidden="true" />
+                                {option.seats}
+                              </span>
+                            )}
+                          </span>
+                          <span className="block truncate text-xs text-muted">
+                            {option.package ? "En carro o en moto" : eta == null ? "Calculando ruta" : `Llegas ${arrivalClock(estimate.data!.duration_s)} · ${eta} min`}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-base font-extrabold">
+                          {estimate.data ? `${option.package ? "desde " : ""}${pesos(option.price)}` : "—"}
+                        </span>
+                        {option.package && <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden="true" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="shrink-0 border-t border-line px-4 pb-3 pt-2">
+              {estimate.data && offered != null && <OfferPrice minimum={prices[tier]} value={offered} onChange={setOffered} />}
+              {(requestRide.error ?? estimate.error) && (
+                <p className="mb-2 text-sm text-danger" role="alert">{((requestRide.error ?? estimate.error) as Error).message}</p>
+              )}
+              <div className="mb-2 flex items-center justify-between text-sm font-semibold">
+                {offered == null ? (
+                  <button type="button" className="text-brand-strong underline disabled:opacity-50" disabled={!estimate.data} onClick={() => setOffered(Math.round(prices[tier]))}>
+                    Pon tu precio
+                  </button>
+                ) : (
+                  <span className="text-xs font-normal text-muted">El conductor acepta tu precio o propone otro</span>
+                )}
+                <button
+                  type="button"
+                  className="flex items-center gap-1 text-ink"
+                  onClick={() => {
+                    setDraftOrigin(origin);
+                    setAdjustingOrigin(true);
+                  }}
+                >
+                  <MapPin size={15} aria-hidden="true" /> Punto de encuentro
+                </button>
+              </div>
+              <Button
+                disabled={
+                  !estimate.data ||
+                  requestRide.isPending ||
+                  (sending && !packageReady(parcel)) ||
+                  (offered != null && offered < Math.ceil(prices[tier] * 0.8))
+                }
+                onClick={() => {
+                  void enablePush().catch(() => undefined);
+                  requestRide.mutate();
+                }}
+              >
+                {requestRide.isPending
+                  ? "Solicitando"
+                  : `${sending ? "Solicitar envío" : `Solicitar ${TIER_NAMES[tier].toLowerCase()}`} · ${pesos(offered ?? prices[tier])}`}
+              </Button>
+            </div>
           </div>
         )}
       </section>

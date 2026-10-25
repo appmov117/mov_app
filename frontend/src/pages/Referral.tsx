@@ -8,7 +8,7 @@ export function ReferralLanding() {
   }, [code]);
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col justify-between bg-night px-6 py-10 text-white">
+    <div className="mx-auto flex min-h-dvh max-w-[430px] flex-col justify-between bg-night px-6 pt-10 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-white">
       <p className="font-display text-3xl">Ruta</p>
       <div>
         <h1 className="font-display text-4xl leading-none">Te invitaron a viajar con Ruta.</h1>

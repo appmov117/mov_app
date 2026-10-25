@@ -92,3 +92,22 @@ export function tuneStyle(map: MapboxMap, url: string) {
     // El estilo aún no termina de cargar; se reintenta en el siguiente evento de estilo.
   }
 }
+
+type StyleConfig = Record<string, Record<string, unknown>>;
+
+/**
+ * Aplica el modo día o noche de Standard a un mapa ya creado. react-map-gl solo usa `config` al
+ * crear el mapa, así que un mapa reutilizado o un cambio de tema se quedaría con el modo anterior.
+ */
+export function applyStyleConfig(map: MapboxMap, config: StyleConfig | undefined) {
+  if (!config) return;
+  try {
+    for (const [fragment, values] of Object.entries(config)) {
+      for (const [key, value] of Object.entries(values)) {
+        if (map.getConfigProperty(fragment, key) !== value) map.setConfigProperty(fragment, key, value);
+      }
+    }
+  } catch {
+    // El estilo aún no termina de cargar; se aplica de nuevo al cargar el mapa.
+  }
+}

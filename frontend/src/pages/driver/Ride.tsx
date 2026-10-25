@@ -177,7 +177,7 @@ export function DriverRide() {
 
   if (current?.status === "completed") {
     return (
-      <Shell nav={false}>
+      <Shell nav={false} footer="dark">
         <TripInvoice
           ride={current}
           role="driver"
@@ -246,7 +246,7 @@ export function DriverRide() {
           : "Navegación · punto de encuentro";
 
   return (
-    <Shell nav={false} full>
+    <Shell nav={false} full footer="dark">
       <div className="relative min-h-0 flex-1">
         <MapView
           center={me ?? navTarget ?? current.origin}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import Map, { NavigationControl, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
+import { applyStyleConfig, tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
 import { useMapRecovery } from "../lib/useMapRecovery.ts";
 import type { Pin } from "./MapView.tsx";
 
@@ -59,6 +59,12 @@ export function FlatMap({
     );
   }
 
+  // Un cambio de tema con el mapa abierto pasa de día a noche sin recrearlo.
+  useEffect(() => {
+    const map = ref.current?.getMap();
+    if (map) applyStyleConfig(map, mapStyle.config);
+  }, [mapStyle.config]);
+
   // Solo se reencuadra cuando cambia lo que se quiere ver, no en cada actualización en vivo.
   useEffect(frame, [fitKey]);
 
@@ -88,6 +94,7 @@ export function FlatMap({
       onMove={onMove && ((event) => onMove({ latitude: event.viewState.latitude, longitude: event.viewState.longitude }))}
       onLoad={(event) => {
         recovery.watch(event.target);
+        applyStyleConfig(event.target, mapStyle.config);
         frame();
       }}
     >
