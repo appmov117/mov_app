@@ -35,6 +35,8 @@ type Props = {
   driverIsMe?: boolean;
   /** Ubicación de quien mira el mapa (punto azul sin rumbo). */
   me?: Pin | null;
+  /** Conductores disponibles cerca, como puntos aproximados mientras se busca. */
+  nearby?: Pin[];
 };
 
 export function MapView({
@@ -56,6 +58,7 @@ export function MapView({
   onPick,
   driverIsMe = false,
   me = null,
+  nearby,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const mapStyle = useMapStyleProps();
@@ -68,6 +71,8 @@ export function MapView({
   // Al ir por el pasajero, el destino de la navegación es la misma recogida: basta con el pin A.
   const destinationIsOrigin = Boolean(origin && destination && distanceM(origin, destination) < 25);
   const boxRef = useRef<HTMLDivElement>(null);
+  // Cada consulta trae un arreglo nuevo: solo se vuelve a proyectar si cambian las posiciones.
+  const nearbyKey = (nearby ?? []).map((pin) => `${pin.latitude},${pin.longitude}`).join(";");
   const [path, setPath] = useState("");
   const [marks, setMarks] = useState<{
     origin: { x: number; y: number } | null;
@@ -75,6 +80,7 @@ export function MapView({
     driver: { x: number; y: number } | null;
     me: { x: number; y: number } | null;
     stops: { x: number; y: number }[];
+    nearby: { x: number; y: number }[];
     bearing: number;
   }>({
     origin: null,
@@ -82,6 +88,7 @@ export function MapView({
     driver: null,
     me: null,
     stops: [],
+    nearby: [],
     bearing: 0,
   });
   const [progress, setProgress] = useState(1);
@@ -176,7 +183,7 @@ export function MapView({
     const map = mapRef.current?.getMap();
     if (!map || !ready) {
       setPath("");
-      setMarks({ origin: null, destination: null, driver: null, me: null, stops: [], bearing: 0 });
+      setMarks({ origin: null, destination: null, driver: null, me: null, stops: [], nearby: [], bearing: 0 });
       return;
     }
     const place = (pin: Pin | null | undefined) => {
@@ -203,6 +210,7 @@ export function MapView({
         driver: place(driver),
         me: place(me),
         stops: (stops ?? []).map((stop) => place(stop)).filter((value): value is { x: number; y: number } => Boolean(value)),
+        nearby: (nearby ?? []).map((pin) => place(pin)).filter((value): value is { x: number; y: number } => Boolean(value)),
         bearing: map.getBearing(),
       });
     };
@@ -223,7 +231,7 @@ export function MapView({
       map.off("move", schedule);
       map.off("resize", schedule);
     };
-  }, [route, ready, origin, destination, driver, stops]);
+  }, [route, ready, origin, destination, driver, stops, nearbyKey]);
 
   // Solo se anima cuando cambia el destino de la ruta, no cuando se recorta al avanzar.
   const routeKey = route && route.length > 1 ? `${route.at(-1)?.[0]}:${route.at(-1)?.[1]}` : "";
@@ -319,6 +327,15 @@ export function MapView({
         </svg>
       )}
       <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden" aria-hidden="true">
+        {marks.nearby.map((point, index) => (
+          <span
+            key={`${point.x}-${point.y}-${index}`}
+            className="absolute grid h-6 w-6 place-items-center rounded-full border-2 border-white bg-[#15803d] text-white shadow-md transition-[left,top] duration-700"
+            style={{ left: point.x, top: point.y, transform: "translate(-50%, -50%)" }}
+          >
+            <Car size={12} strokeWidth={2.6} />
+          </span>
+        ))}
         {marks.origin && !(navigate && driver) && !originIsMe && (
           <MapPinMarker point={marks.origin} color="#0B6E7F" pulse={pulse || !destination} label="A" />
         )}

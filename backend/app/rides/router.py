@@ -20,6 +20,7 @@ from app.rides.service import (
     mark_arrived,
     mark_arriving,
     mark_stop_arrived,
+    nearby_drivers,
     reject_offer,
     start_ride,
 )
@@ -42,6 +43,11 @@ async def estimate(
         (data.destination.latitude, data.destination.longitude),
         tuple((stop.latitude, stop.longitude) for stop in data.stops),
     )
+
+
+@router.get("/passengers/me/nearby-drivers")
+def nearby(user: User = Depends(require_role("passenger")), db: Session = Depends(get_db)):
+    return nearby_drivers(db, user)
 
 
 @router.post("/ride-requests")

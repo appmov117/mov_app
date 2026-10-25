@@ -464,6 +464,27 @@ async def create_request(db: Session, user: User, payload) -> dict:
     return present_request(db, request)
 
 
+NEARBY_RADIUS_M = 5000
+NEARBY_LIMIT = 15
+
+
+def nearby_drivers(db: Session, user: User) -> list[dict]:
+    """Conductores disponibles cerca de la recogida mientras el pasajero espera.
+
+    Son los mismos que podrían recibir la solicitud. La posición se redondea a unos 110 m y no
+    lleva datos del conductor, para no exponer dónde está exactamente cada uno.
+    """
+    passenger = passenger_for_user(db, user)
+    request = _open_request(db, passenger.id)
+    origin = repository.request_coords(db, request.id)["origin"] if request else None
+    if origin is None:
+        return []
+    pool = repository.find_candidates(
+        db, origin["latitude"], origin["longitude"], NEARBY_RADIUS_M, NEARBY_LIMIT, [], [], request.service
+    )
+    return [{"latitude": round(c.latitude, 3), "longitude": round(c.longitude, 3)} for c in pool]
+
+
 def cancel_request(db: Session, user: User, request_id: UUID) -> dict:
     passenger = passenger_for_user(db, user)
     request = db.scalar(select(RideRequest).where(RideRequest.id == request_id).with_for_update())

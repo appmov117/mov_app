@@ -79,3 +79,15 @@ def test_admin_moto_section_lists_moto_drivers_and_rides(client):
     rides = client.get("/api/v1/admin/rides?service=moto", headers=admin).json()
     assert len(rides) == 1 and rides[0]["service"] == "moto"
     assert client.get("/api/v1/admin/rides?service=auto", headers=admin).json() == []
+
+
+def test_waiting_passenger_sees_nearby_drivers_of_the_requested_kind(client):
+    admin = make_admin(client)
+    ready_driver(client, "9996000040", "auto4@ruta.local", 20.96741, -89.59262, admin)
+    ready_driver(client, "9996000041", "moto4@ruta.local", 20.9690, -89.5940, admin, kind="moto")
+    headers = passenger(client)
+    assert client.get("/api/v1/passengers/me/nearby-drivers", headers=headers).json() == []
+
+    client.post("/api/v1/ride-requests", headers=headers, json=TRIP | {"service": "moto"})
+    nearby = client.get("/api/v1/passengers/me/nearby-drivers", headers=headers).json()
+    assert nearby == [{"latitude": 20.969, "longitude": -89.594}]

@@ -87,6 +87,14 @@ export function PassengerRide() {
   });
   const ride = active.data?.ride ?? null;
   const request = active.data?.request ?? null;
+  const waiting = request != null && (request.status === "searching" || request.status === "offered") && !ride;
+  // Mientras se busca, los conductores disponibles cerca dan idea de cuánto puede tardar.
+  const nearby = useQuery({
+    queryKey: ["nearby-drivers"],
+    queryFn: () => api<Pin[]>("/api/v1/passengers/me/nearby-drivers"),
+    enabled: waiting,
+    refetchInterval: waiting ? 10_000 : false,
+  });
   const origin = ride?.origin ?? request?.origin;
   const destination = ride?.destination ?? request?.destination;
   const driverLocation = live ?? ride?.driver?.location ?? null;
@@ -236,6 +244,7 @@ export function PassengerRide() {
               fit={Boolean(route && route.length > 1) || Boolean(driverLocation && origin)}
               fitPadding={wide ? { top: 72, bottom: 56, left: PANEL_OFFSET, right: 56 } : { top: 72, bottom: 220, left: 56, right: 56 }}
               pulse={searching}
+              nearby={waiting ? nearby.data : undefined}
             />
           )}
         </div>
@@ -349,6 +358,13 @@ export function PassengerRide() {
             </div>
             <p className="mt-3 text-center text-sm text-muted">Hacia {place}</p>
             <p className="mt-1 text-center text-sm font-semibold">{fare == null ? "Calculando tarifa" : pesos(fare)}</p>
+            {nearby.data && (
+              <p className="mt-1 text-center text-xs text-muted">
+                {nearby.data.length === 0
+                  ? "Aún no vemos conductores disponibles cerca"
+                  : `${nearby.data.length === 15 ? "15 o más" : nearby.data.length} ${nearby.data.length === 1 ? "conductor disponible" : "conductores disponibles"} a menos de 5 km`}
+              </p>
+            )}
             {(request?.counter_offers.length ?? 0) > 0 && <CounterOffers offers={request!.counter_offers} fare={fare ?? null} />}
             <Button className="mt-4" variant="line" onClick={() => cancel.mutate()}>Cancelar</Button>
           </>
