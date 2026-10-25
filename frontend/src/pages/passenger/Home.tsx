@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Briefcase, Car, ChevronLeft, ChevronRight, Home as HomeIcon, LocateFixed, MapPin, Motorbike, Package, User as Person, Plane, Search, ShoppingBag, Star, UserRound, X } from "lucide-react";
+import { Briefcase, Car, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Home as HomeIcon, LocateFixed, MapPin, Motorbike, Package, User as Person, Plane, Search, ShoppingBag, Star, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
@@ -76,6 +76,8 @@ export function PassengerHome() {
   const sending = tier === "paquete" || tier === "paquete_moto";
   // Paquete abre su propia sección con el vehículo y los datos de quien recibe.
   const packageStep = sending;
+  // "¿A dónde vas?" se puede reducir a su encabezado para ver más mapa.
+  const [searchCollapsed, setSearchCollapsed] = useState(false);
   const [focus, setFocus] = useState<Pin | null>(null);
   const [locating, setLocating] = useState(false);
   const [placing, setPlacing] = useState(false);
@@ -280,6 +282,7 @@ export function PassengerHome() {
     { id: "paquete" as const, name: "Paquete", icon: Package, seats: 0, price: Math.min(prices.paquete, prices.paquete_moto), package: true },
   ];
   const editingMap = placing || adjustingOrigin;
+  const panelCollapsed = searchCollapsed && !destination && !adjustingOrigin;
   const [hidden, setHidden] = useState<string[]>(readHidden);
   const favoriteList = savedPlaces.data?.length ? savedPlaces.data : shortcuts.filter((place) => !hidden.includes(place.label));
 
@@ -304,7 +307,7 @@ export function PassengerHome() {
   return (
     <Shell nav={!destination && !editingMap} scroll={false} full>
       <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className={`${editingMap ? "relative min-h-0 flex-1" : "relative min-h-[220px] flex-[0_0_46%] md:flex-1"} lg:absolute lg:inset-0`}>
+      <div className={`${editingMap || panelCollapsed ? "relative min-h-0 flex-1" : "relative min-h-[220px] flex-[0_0_46%] md:flex-1"} lg:absolute lg:inset-0`}>
         {/* El mapa sale de inmediato, aunque el servidor tarde; solo se oculta si ya hay un viaje activo. */}
         {!active.data?.ride && !active.data?.request ? (
           <MapView
@@ -344,7 +347,7 @@ export function PassengerHome() {
           <LocateFixed size={18} />
         </button>
       </div>
-      <section className={`relative z-10 -mt-4 overflow-hidden rounded-t-[28px] bg-surface shadow-[0_-8px_30px_rgba(16,24,32,0.06)] lg:absolute lg:left-4 lg:top-4 lg:mt-0 lg:max-h-[calc(100%-2rem)] lg:w-[400px] lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)] ${editingMap ? "shrink-0" : "flex min-h-0 flex-1 flex-col md:max-h-[55%] md:flex-none lg:max-h-[calc(100%-2rem)]"}`}>
+      <section className={`relative z-10 -mt-4 overflow-hidden rounded-t-[28px] bg-surface shadow-[0_-8px_30px_rgba(16,24,32,0.06)] lg:absolute lg:left-4 lg:top-4 lg:mt-0 lg:max-h-[calc(100%-2rem)] lg:w-[400px] lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)] ${editingMap || panelCollapsed ? "shrink-0 pb-3" : "flex min-h-0 flex-1 flex-col md:max-h-[55%] md:flex-none lg:max-h-[calc(100%-2rem)]"}`}>
         {adjustingOrigin && (
           <div className="px-4 pb-4 pt-5">
             <h1 className="text-xl font-extrabold">Ajusta el punto de encuentro</h1>
@@ -365,8 +368,18 @@ export function PassengerHome() {
         {!adjustingOrigin && !destination && (
           <>
             <div className="shrink-0 px-4 pt-4">
-            {!placing && <h1 className="text-[26px] font-extrabold tracking-tight">¿A dónde vas?</h1>}
-            <div className="mt-3 flex items-center gap-2">
+            {!placing && (
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-3 text-left"
+                aria-expanded={!searchCollapsed}
+                onClick={() => setSearchCollapsed((value) => !value)}
+              >
+                <h1 className="text-[26px] font-extrabold tracking-tight">¿A dónde vas?</h1>
+                {searchCollapsed ? <ChevronUp size={24} className="text-muted" aria-hidden="true" /> : <ChevronDown size={24} className="text-muted" aria-hidden="true" />}
+              </button>
+            )}
+            <div className={`mt-3 items-center gap-2 ${searchCollapsed && !placing ? "hidden" : "flex"}`}>
             <label className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl bg-foam px-3">
               <Search size={18} className="text-muted" />
               <input
@@ -434,7 +447,7 @@ export function PassengerHome() {
               </div>
             )}
             </div>
-            {!placing && <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
+            {!placing && !searchCollapsed && <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
             {query.trim().length >= 3 && results.length > 0 && (
               <ul className="mt-2 overflow-hidden rounded-2xl border border-line">
                 {results.map((place) => {

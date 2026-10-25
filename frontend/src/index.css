@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Teléfono acostado: poca altura, el panel del viaje pasa a un costado del mapa. */
+@custom-variant landscape (@media (orientation: landscape) and (max-height: 520px));
 
 @theme {
   --font-display: "Plus Jakarta Sans", sans-serif;

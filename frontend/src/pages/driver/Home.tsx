@@ -130,7 +130,7 @@ export function DriverHome() {
 
   if (offer?.status === "countered") {
     return (
-      <Shell nav={false} full footer="dark">
+      <Shell nav={false} full>
         <CounterWaiting offer={offer} />
       </Shell>
     );
@@ -144,13 +144,13 @@ export function DriverHome() {
     const invalidCounter = counterAmount == null || minCounter == null || counterAmount < minCounter || counterAmount === estimated;
     const difference = counterAmount != null && estimated != null ? counterAmount - estimated : 0;
     return (
-      <Shell nav={false} full footer="dark">
-        <div className="flex min-h-0 flex-1 flex-col bg-surface-dark text-white md:px-[max(0px,calc((100%-36rem)/2))]">
+      <Shell nav={false} full>
+        <div className="flex min-h-0 flex-1 flex-col bg-surface text-ink md:px-[max(0px,calc((100%-36rem)/2))]">
           <div className="flex items-start justify-between gap-4 px-5 pt-6">
             <div>
-              <h1 className="text-lg font-bold text-white/80">{offer.after_current_ride ? "Siguiente viaje" : "Nueva solicitud"}</h1>
+              <h1 className="text-lg font-bold text-muted">{offer.after_current_ride ? "Siguiente viaje" : "Nueva solicitud"}</h1>
               <p className="mt-1 text-5xl font-extrabold tracking-tight">{pesos(offer.estimated_fare)}</p>
-              <p className="mt-1 text-sm text-white/70">
+              <p className="mt-1 text-sm text-muted">
                 {offer.passenger_offered ? `Precio del pasajero · mínima ${pesos(offer.min_counter_fare)}` : "Tarifa mínima"} ·{" "}
                 {SERVICE_NAMES[offer.service]} · {km(offer.trip_distance_m)}
                 {offer.surcharge_label ? ` · ${offer.surcharge_label}` : ""}
@@ -158,14 +158,14 @@ export function DriverHome() {
             </div>
             <Countdown seconds={seconds} total={offerSeconds} />
           </div>
-          <ol className="mx-5 mt-4 space-y-1.5 rounded-xl bg-white/[0.06] px-3.5 py-2.5 text-sm">
+          <ol className="mx-5 mt-4 space-y-1.5 rounded-xl bg-foam px-3.5 py-2.5 text-sm">
             <RouteStop color="bg-brand-bright" place={offer.origin_label ?? "Punto de encuentro"} detail={pickupDetail(offer)} />
             {offer.stop_count > 0 && (
-              <RouteStop color="bg-white/50" place={`${offer.stop_count} ${offer.stop_count === 1 ? "parada" : "paradas"} en el camino`} />
+              <RouteStop color="bg-muted" place={`${offer.stop_count} ${offer.stop_count === 1 ? "parada" : "paradas"} en el camino`} />
             )}
             <RouteStop color="bg-[#f87171]" square place={offer.destination_label?.split(" · ")[0] ?? "Destino"} />
             {offer.package && (
-              <li className="truncate border-t border-white/10 pt-1.5 text-xs text-white/70">
+              <li className="truncate border-t border-line pt-1.5 text-xs text-muted">
                 Envío: {offer.package.description} · para {offer.package.recipient_name}
               </li>
             )}
@@ -183,16 +183,16 @@ export function DriverHome() {
           </div>
           <div className="space-y-2 px-5 pb-6 pt-4">
             {(accept.error || counter.error) && (
-              <p className="text-sm text-[#F2C14E]">{((accept.error ?? counter.error) as Error).message}</p>
+              <p className="text-sm text-warn">{((accept.error ?? counter.error) as Error).message}</p>
             )}
             {counterAmount != null && canCounter ? (
-              <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-sm text-white/70">Tu precio, desde {pesos(minCounter)}</p>
+              <div className="rounded-2xl bg-foam p-4">
+                <p className="text-sm text-muted">Tu precio, desde {pesos(minCounter)}</p>
                 <div className="mt-2 flex items-center justify-between gap-3">
                   <button
                     type="button"
                     aria-label="Bajar precio"
-                    className="grid h-11 w-11 place-items-center rounded-full border border-white/25 text-xl font-bold disabled:opacity-30"
+                    className="grid h-11 w-11 place-items-center rounded-full border border-line text-xl font-bold disabled:opacity-30"
                     disabled={counterAmount <= minCounter}
                     onClick={() => setCounterAmount(Math.max(minCounter, counterAmount - 5))}
                   >
@@ -212,7 +212,7 @@ export function DriverHome() {
                         onChange={(event) => setCounterAmount(Math.min(10000, Math.max(0, Math.round(Number(event.target.value)))))}
                       />
                     </span>
-                    <span className={`block text-xs font-semibold ${difference > 0 ? "text-[#86efac]" : difference < 0 ? "text-[#F2C14E]" : "text-white/70"}`}>
+                    <span className={`block text-xs font-semibold ${difference > 0 ? "text-ok" : difference < 0 ? "text-warn" : "text-muted"}`}>
                       {difference === 0
                         ? "Igual a la tarifa mínima"
                         : counterAmount < minCounter
@@ -223,7 +223,7 @@ export function DriverHome() {
                   <button
                     type="button"
                     aria-label="Subir precio"
-                    className="grid h-11 w-11 place-items-center rounded-full border border-white/25 text-xl font-bold disabled:opacity-30"
+                    className="grid h-11 w-11 place-items-center rounded-full border border-line text-xl font-bold disabled:opacity-30"
                     disabled={counterAmount >= 10000}
                     onClick={() => setCounterAmount(Math.min(10000, Math.max(minCounter, counterAmount) + 5))}
                   >
@@ -231,11 +231,11 @@ export function DriverHome() {
                   </button>
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <button className="h-11 rounded-full border border-white/25 font-semibold" onClick={() => setCounterAmount(null)}>
+                  <button className="h-11 rounded-full border border-line font-semibold" onClick={() => setCounterAmount(null)}>
                     Volver
                   </button>
                   <button
-                    className="h-11 rounded-full bg-brand-strong font-semibold disabled:opacity-50"
+                    className="h-11 rounded-full bg-brand-strong font-semibold text-white disabled:opacity-50"
                     disabled={counter.isPending || invalidCounter}
                     onClick={() => counter.mutate({ id: offer.id, amount: counterAmount })}
                   >
@@ -247,7 +247,7 @@ export function DriverHome() {
               <>
                 <button
                   type="button"
-                  className="h-14 w-full rounded-full bg-brand-strong text-lg font-bold disabled:opacity-60"
+                  className="h-14 w-full rounded-full bg-brand-strong text-lg font-bold text-white disabled:opacity-60"
                   disabled={accept.isPending || reject.isPending}
                   onClick={() => accept.mutate(offer.id)}
                 >
@@ -256,7 +256,7 @@ export function DriverHome() {
                 {canCounter && (
                   <button
                     type="button"
-                    className="h-12 w-full rounded-full border border-white/25 font-semibold disabled:opacity-60"
+                    className="h-12 w-full rounded-full border border-line font-semibold disabled:opacity-60"
                     disabled={accept.isPending || reject.isPending}
                     onClick={() => setCounterAmount(minCounter + 10)}
                   >
@@ -265,7 +265,7 @@ export function DriverHome() {
                 )}
                 <button
                   type="button"
-                  className="h-11 w-full rounded-full font-semibold text-[#ff8b9a] disabled:opacity-60"
+                  className="h-11 w-full rounded-full font-semibold text-danger disabled:opacity-60"
                   disabled={accept.isPending || reject.isPending}
                   onClick={() => reject.mutate(offer.id)}
                 >
@@ -357,16 +357,16 @@ function CounterWaiting({ offer }: { offer: Offer }) {
   const left = offer.counter_expires_at ? Math.max(0, Math.ceil((Date.parse(offer.counter_expires_at) - now) / 1000)) : 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-surface-dark px-6 text-center text-white">
-      <p className="text-sm text-white/60">Propusiste</p>
+    <div className="flex min-h-0 flex-1 flex-col items-center justify-center bg-surface px-6 text-center text-ink">
+      <p className="text-sm text-muted">Propusiste</p>
       <p className="mt-1 text-5xl font-extrabold">{pesos(offer.proposed_fare)}</p>
-      <p className="mt-1 text-sm text-white/50">Tarifa estimada {pesos(offer.estimated_fare)}</p>
+      <p className="mt-1 text-sm text-muted">Tarifa estimada {pesos(offer.estimated_fare)}</p>
       <p className="mt-6 font-semibold">Esperando respuesta del pasajero</p>
-      <p className="mt-1 text-sm text-white/60" aria-live="polite">{left} s</p>
-      <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-white/10">
+      <p className="mt-1 text-sm text-muted" aria-live="polite">{left} s</p>
+      <div className="mt-4 h-1.5 w-48 overflow-hidden rounded-full bg-foam">
         <span className="ruta-bar block h-full w-1/3 rounded-full bg-surface" />
       </div>
-      <p className="mt-6 max-w-[30ch] text-xs text-white/50">{offer.destination_label?.split(" · ")[0] ?? "Destino"}</p>
+      <p className="mt-6 max-w-[30ch] text-xs text-muted">{offer.destination_label?.split(" · ")[0] ?? "Destino"}</p>
     </div>
   );
 }
@@ -387,7 +387,7 @@ function RouteStop({ color, place, detail, square = false }: { color: string; pl
     <li className="flex items-center gap-2.5">
       <span className={`h-2.5 w-2.5 shrink-0 ${square ? "rounded-sm" : "rounded-full"} ${color}`} aria-hidden="true" />
       <span className="min-w-0 truncate font-semibold">{place}</span>
-      {detail && <span className="ml-auto shrink-0 text-xs text-white/60">{detail}</span>}
+      {detail && <span className="ml-auto shrink-0 text-xs text-muted">{detail}</span>}
     </li>
   );
 }
@@ -400,13 +400,13 @@ function Countdown({ seconds, total }: { seconds: number; total: number }) {
   return (
     <span className="relative grid h-16 w-16 shrink-0 place-items-center" role="timer" aria-label={`Quedan ${seconds} segundos para aceptar`}>
       <svg viewBox="0 0 64 64" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <circle cx="32" cy="32" r={radius} fill="none" stroke="rgb(255 255 255 / 0.12)" strokeWidth="5" />
+        <circle cx="32" cy="32" r={radius} fill="none" stroke="var(--color-line)" strokeWidth="5" />
         <circle
           cx="32"
           cy="32"
           r={radius}
           fill="none"
-          stroke={urgent ? "#F2C14E" : "#5ed3e0"}
+          stroke={urgent ? "var(--color-warn)" : "var(--color-brand-strong)"}
           strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={length}
@@ -414,7 +414,7 @@ function Countdown({ seconds, total }: { seconds: number; total: number }) {
           className="transition-[stroke-dashoffset] duration-1000 ease-linear"
         />
       </svg>
-      <span className={`text-xl font-extrabold tabular-nums ${urgent ? "text-[#F2C14E]" : ""}`}>{seconds}</span>
+      <span className={`text-xl font-extrabold tabular-nums ${urgent ? "text-warn" : ""}`}>{seconds}</span>
     </span>
   );
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, CornerUpLeft, CornerUpRight, LocateFixed, MapPin, MapPinned, MessageCircle, Navigation, Undo2 } from "lucide-react";
+import { ArrowUp, ChevronDown, ChevronUp, CornerUpLeft, CornerUpRight, LocateFixed, MapPin, MapPinned, MessageCircle, Navigation, Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DeliveryProof } from "../../components/DeliveryProof.tsx";
@@ -81,6 +81,8 @@ export function DriverRide() {
   const [recenterToken, setRecenterToken] = useState(0);
   const startedNav = useRef<string | null>(null);
   const [pin, setPin] = useState("");
+  // El panel se puede ocultar para ver más mapa; vuelve a abrirse al tocar su encabezado.
+  const [collapsed, setCollapsed] = useState(false);
   const [deliveryCode, setDeliveryCode] = useState("");
   const action = useMutation({
     mutationFn: async (path: string) => {
@@ -177,11 +179,10 @@ export function DriverRide() {
 
   if (current?.status === "completed") {
     return (
-      <Shell nav={false} footer="dark">
+      <Shell nav={false}>
         <TripInvoice
           ride={current}
           role="driver"
-          dark
           submit={({ rating, comment }) =>
             api(`/api/v1/rides/${current.id}/rating`, {
               method: "POST",
@@ -246,7 +247,7 @@ export function DriverRide() {
           : "Navegación · punto de encuentro";
 
   return (
-    <Shell nav={false} full footer="dark">
+    <Shell nav={false} full>
       <div className="relative min-h-0 flex-1">
         <MapView
           center={me ?? navTarget ?? current.origin}
@@ -265,19 +266,19 @@ export function DriverRide() {
           fitPadding={wide ? { top: 160, bottom: 48, left: PANEL_OFFSET, right: 48 } : { top: 160, bottom: 300, left: 48, right: 48 }}
         />
         {current.status !== "driver_arrived" && (
-          <div className="absolute left-3 top-3 z-20 flex max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-surface-dark/90 py-2 pl-2 pr-4 text-white shadow-lg backdrop-blur lg:left-4 lg:top-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-strong">
+          <div className="absolute left-3 top-3 z-20 flex max-w-[calc(100%-1.5rem)] items-center gap-3 rounded-2xl bg-surface/95 py-2 pl-2 pr-4 text-ink shadow-lg backdrop-blur lg:left-4 lg:top-4 landscape:left-[356px]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-strong text-white">
               <TurnIcon step={nextStep} />
             </span>
             <span className="min-w-0">
               <span className="block text-xl font-extrabold leading-none">
                 {metersLabel(guidance.distance_m || nextStep?.distance_m || 0)}
               </span>
-              {nextStep?.name && <span className="mt-1 block truncate text-sm text-white/70">{nextStep.name}</span>}
+              {nextStep?.name && <span className="mt-1 block truncate text-sm text-muted">{nextStep.name}</span>}
             </span>
           </div>
         )}
-        <LocationNotice compact className="absolute bottom-4 left-3 right-[84px] z-30 lg:bottom-auto lg:left-4 lg:right-auto lg:top-[150px] lg:w-[400px]" />
+        <LocationNotice compact className="absolute bottom-4 left-3 right-[84px] z-30 landscape:left-[356px] lg:bottom-auto lg:left-4 lg:right-auto lg:top-[150px] lg:w-[400px]" />
         {navTarget && activeRoute.length > 1 && (
           <TripProgress
             className="absolute right-4 top-1/2 z-20 -translate-y-1/2"
@@ -299,10 +300,32 @@ export function DriverRide() {
           <LocateFixed size={22} />
         </button>
       </div>
-      <section className="bg-surface-dark px-5 py-5 text-white lg:absolute lg:bottom-4 lg:left-4 lg:z-20 lg:max-h-[calc(100%-11rem)] lg:w-[400px] lg:overflow-y-auto lg:rounded-[28px] lg:shadow-[0_18px_50px_rgba(16,24,32,0.3)]">
-        <p className="text-sm text-white/60">{phaseHint}</p>
-        <h1 className="text-2xl font-extrabold">{phaseTitle}</h1>
-        <p className="mt-1 text-sm text-white/70">
+      <section className="relative z-20 -mt-4 rounded-t-[28px] bg-surface px-5 pb-4 text-ink shadow-[0_-8px_30px_rgba(16,24,32,0.12)] lg:absolute lg:bottom-4 lg:left-4 lg:mt-0 lg:max-h-[calc(100%-11rem)] lg:w-[400px] lg:overflow-y-auto lg:rounded-[28px] lg:pt-1 lg:shadow-[0_18px_50px_rgba(16,24,32,0.18)] landscape:absolute landscape:bottom-3 landscape:left-3 landscape:top-3 landscape:mt-0 landscape:max-h-none landscape:w-[340px] landscape:overflow-y-auto landscape:rounded-3xl">
+        <button
+          type="button"
+          className="flex w-full flex-col items-center pb-1 pt-2"
+          aria-expanded={!collapsed}
+          aria-controls="driver-sheet"
+          aria-label={collapsed ? "Mostrar detalles del viaje" : "Ocultar detalles del viaje"}
+          onClick={() => setCollapsed((value) => !value)}
+        >
+          <span className="h-1.5 w-10 rounded-full bg-line" aria-hidden="true" />
+        </button>
+        <button type="button" className="block w-full text-left" onClick={() => setCollapsed((value) => !value)}>
+          <span className="flex items-center justify-between gap-3">
+            <span className="min-w-0">
+              <span className="block text-sm text-muted">{phaseHint}</span>
+              <span className="block truncate text-2xl font-extrabold">{phaseTitle}</span>
+            </span>
+            {collapsed ? <ChevronUp size={22} className="shrink-0 text-muted" aria-hidden="true" /> : <ChevronDown size={22} className="shrink-0 text-muted" aria-hidden="true" />}
+          </span>
+        </button>
+        <div
+          id="driver-sheet"
+          className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"}`}
+        >
+        <div className="min-h-0 overflow-hidden" inert={collapsed}>
+        <p className="mt-1 text-sm text-muted">
           {current.passenger?.name ?? "Pasajero"}
           {leg.data ? ` · ${km(leg.data.distance_m)} · ${minutes(leg.data.duration_s)}` : ` · ${km(current.estimated_distance_m)}`}
           {` · ${pesos(current.estimated_fare)}`}
@@ -311,14 +334,14 @@ export function DriverRide() {
           rideId={current.id}
           role="driver"
           counterpart={current.passenger?.name ?? "Pasajero"}
-          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold"
+          className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-foam text-sm font-semibold"
         >
           <MessageCircle size={16} /> Mensaje a {current.passenger?.name.split(" ")[0] ?? "pasajero"}
         </ChatButton>
         {navTarget && (
           <div className="mt-3 grid grid-cols-2 gap-2">
             <a
-              className="flex h-11 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold"
+              className="flex h-11 items-center justify-center gap-2 rounded-full bg-foam text-sm font-semibold"
               href={googleMapsUrl(navTarget, me)}
               target="_blank"
               rel="noreferrer"
@@ -326,7 +349,7 @@ export function DriverRide() {
               <MapPinned size={16} /> Google Maps
             </a>
             <a
-              className="flex h-11 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold"
+              className="flex h-11 items-center justify-center gap-2 rounded-full bg-foam text-sm font-semibold"
               href={wazeUrl(navTarget)}
               target="_blank"
               rel="noreferrer"
@@ -336,9 +359,9 @@ export function DriverRide() {
           </div>
         )}
         {current.package && (
-          <div className="mt-3 rounded-2xl bg-white/10 px-4 py-3 text-sm">
+          <div className="mt-3 rounded-2xl bg-foam px-4 py-3 text-sm">
             <p className="font-semibold">Envío: {current.package.description}</p>
-            <p className="text-white/70">
+            <p className="text-muted">
               Recibe {current.package.recipient_name} ·{" "}
               <a className="underline" href={`tel:${current.package.recipient_phone}`}>
                 {current.package.recipient_phone}
@@ -353,7 +376,7 @@ export function DriverRide() {
               inputMode="decimal"
               value={fare}
               placeholder={String(current.estimated_fare ?? "")}
-              className="h-12 w-full rounded-2xl bg-surface px-3 text-ink"
+              className="h-12 w-full rounded-2xl border border-line bg-surface px-3 text-ink"
               onChange={(event) => setFare(event.target.value)}
             />
             <div className="flex gap-2 text-sm">
@@ -363,7 +386,7 @@ export function DriverRide() {
                 ["transfer", "Transferencia"],
                 ["other", "Otro"],
               ].map(([id, label]) => (
-                <button key={id} className={`rounded-full px-3 py-2 ${method === id ? "bg-surface text-ink" : "bg-white/10"}`} onClick={() => setMethod(id)}>
+                <button key={id} className={`rounded-full px-3 py-2 ${method === id ? "bg-ink text-surface" : "bg-foam"}`} onClick={() => setMethod(id)}>
                   {label}
                 </button>
               ))}
@@ -378,7 +401,7 @@ export function DriverRide() {
               />
             )}
             <button
-              className="h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60"
+              className="h-12 w-full rounded-full bg-brand-strong font-semibold text-white disabled:opacity-60"
               disabled={action.isPending || (Boolean(current.package) && (!current.has_delivery_photo || deliveryCode.length !== 4))}
               onClick={() => action.mutate("complete")}
             >
@@ -388,7 +411,7 @@ export function DriverRide() {
         )}
         {going && nextStop && (
           <button
-            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60"
+            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold text-white disabled:opacity-60"
             disabled={action.isPending}
             onClick={() => action.mutate(current.stop_arrived ? "stops/continue" : "stops/arrived")}
           >
@@ -396,7 +419,7 @@ export function DriverRide() {
           </button>
         )}
         {going && !nextStop && !asking && (
-          <button className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold" onClick={() => setAsking(true)}>
+          <button className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold text-white" onClick={() => setAsking(true)}>
             Finalizar viaje
           </button>
         )}
@@ -406,20 +429,22 @@ export function DriverRide() {
             value={pin}
             placeholder="Código de seguridad del pasajero"
             aria-label="Código de seguridad del pasajero"
-            className="mt-4 h-12 w-full rounded-2xl bg-surface px-3 text-center text-lg font-bold tracking-[0.3em] text-ink placeholder:text-sm placeholder:font-normal placeholder:tracking-normal"
+            className="mt-4 h-12 w-full rounded-2xl border border-line bg-surface px-3 text-center text-lg font-bold tracking-[0.3em] text-ink placeholder:text-sm placeholder:font-normal placeholder:tracking-normal"
             onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
           />
         )}
         {!going && step && (
           <button
-            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60"
+            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold text-white disabled:opacity-60"
             disabled={action.isPending || (step === "start" && Boolean(current.pin_required) && pin.length !== 4)}
             onClick={() => action.mutate(step)}
           >
             {action.isPending ? "Un momento" : stepLabel}
           </button>
         )}
-        {action.error && !action.isPending && <p className="mt-2 text-sm text-[#F2C14E]">{(action.error as Error).message}</p>}
+        {action.error && !action.isPending && <p className="mt-2 text-sm text-warn">{(action.error as Error).message}</p>}
+        </div>
+        </div>
       </section>
     </Shell>
   );
