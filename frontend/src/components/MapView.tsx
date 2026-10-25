@@ -5,6 +5,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useCompass } from "../lib/compass.ts";
 import { distanceM } from "../lib/guidance.ts";
 import { applyStyleConfig, tuneStyle, useMapStyleProps } from "../lib/mapStyle.ts";
+import { createTrack } from "../lib/smoothTrack.ts";
 import { useMapRecovery } from "../lib/useMapRecovery.ts";
 
 export type Pin = { latitude: number; longitude: number };
@@ -91,6 +92,7 @@ export function MapView({
     stops: { x: number; y: number }[];
     nearby: { x: number; y: number }[];
     bearing: number;
+    heading: number | null;
   }>({
     origin: null,
     destination: null,
@@ -99,10 +101,16 @@ export function MapView({
     stops: [],
     nearby: [],
     bearing: 0,
+    heading: null,
   });
   const [progress, setProgress] = useState(1);
   const drawnRoute = useRef("");
-  const lastCameraAt = useRef(0);
+  const [track] = useState(createTrack);
+  const followRef = useRef(follow);
+  // Mientras el usuario pellizca o gira el mapa, la cámara no lo interrumpe.
+  const gesture = useRef(false);
+  const easingUntil = useRef(0);
+  followRef.current = follow;
   const routeRef = useRef(route);
   const fitRef = useRef(fit);
   const padRef = useRef(fitPadding);
@@ -157,34 +165,49 @@ export function MapView({
     return () => cancelAnimationFrame(frame);
   }, [route, fit, ready, navigate]);
 
-  // Cámara estilo navegación: sigue al carro con rumbo
   useEffect(() => {
-    if (!navigate || !ready || !driver || !follow) return;
+    if (driver) track.push(driver, heading);
+    else track.clear();
+  }, [track, driver?.latitude, driver?.longitude, heading]);
+
+  // Al empezar a seguir o al tocar "centrar", la cámara llega con una transición;
+  // después acompaña al carro cuadro a cuadro desde el ciclo de dibujo.
+  const hasDriver = Boolean(driver);
+  useEffect(() => {
+    if (!navigate || !ready || !follow || !hasDriver) return;
     const map = mapRef.current?.getMap();
-    if (!map) return;
-    const now = performance.now();
-    // La geolocalización puede emitir varias posiciones por segundo. Limitar
-    // las animaciones evita acumular transiciones WebGL en el renderer.
-    if (now - lastCameraAt.current < 500) return;
-    lastCameraAt.current = now;
-    const bearing = heading != null && !Number.isNaN(heading) ? heading : map.getBearing();
+    track.step();
+    const pin = track.pin();
+    if (!map || !pin) return;
+    const duration = 600;
+    easingUntil.current = performance.now() + duration;
     map.easeTo({
-      center: [driver.longitude, driver.latitude],
-      zoom: Math.max(map.getZoom(), NAV_ZOOM),
-      bearing,
-      duration: 350,
-      padding: typeof fitPadding === "number" ? { top: 120, bottom: fitPadding, left: 40, right: 40 } : fitPadding,
+      center: [pin.longitude, pin.latitude],
+      zoom: NAV_ZOOM,
+      bearing: track.heading() ?? map.getBearing(),
+      duration,
+      padding: navPadding(map.getContainer().clientHeight, padRef.current),
     });
-  }, [navigate, ready, follow, recenterToken, driver?.latitude, driver?.longitude, heading, fitPadding]);
+  }, [track, navigate, ready, follow, recenterToken, hasDriver]);
 
   useEffect(() => {
     if (!navigate || !ready) return;
     const map = mapRef.current?.getMap();
     if (!map) return;
     const stopFollow = () => onUserPan?.();
+    const startGesture = (event: { originalEvent?: unknown }) => {
+      if (event.originalEvent) gesture.current = true;
+    };
+    const endGesture = () => {
+      gesture.current = false;
+    };
     map.on("dragstart", stopFollow);
+    map.on("movestart", startGesture);
+    map.on("moveend", endGesture);
     return () => {
       map.off("dragstart", stopFollow);
+      map.off("movestart", startGesture);
+      map.off("moveend", endGesture);
     };
   }, [navigate, ready, onUserPan]);
 
@@ -192,7 +215,7 @@ export function MapView({
     const map = mapRef.current?.getMap();
     if (!map || !ready) {
       setPath("");
-      setMarks({ origin: null, destination: null, driver: null, me: null, stops: [], nearby: [], bearing: 0 });
+      setMarks({ origin: null, destination: null, driver: null, me: null, stops: [], nearby: [], bearing: 0, heading: null });
       return;
     }
     const place = (pin: Pin | null | undefined) => {
@@ -216,11 +239,12 @@ export function MapView({
       setMarks({
         origin: place(origin),
         destination: place(destination),
-        driver: place(driver),
+        driver: place(track.pin() ?? driver),
         me: place(me),
         stops: (stops ?? []).map((stop) => place(stop)).filter((value): value is { x: number; y: number } => Boolean(value)),
         nearby: (nearby ?? []).map((pin) => place(pin)).filter((value): value is { x: number; y: number } => Boolean(value)),
         bearing: map.getBearing(),
+        heading: track.heading(),
       });
     };
     paint();
@@ -233,10 +257,28 @@ export function MapView({
         paint();
       });
     };
+    // El carro se desliza entre lecturas; al navegar, la cámara lo acompaña en el mismo cuadro.
+    let loop = 0;
+    const tick = (now: number) => {
+      loop = requestAnimationFrame(tick);
+      if (!track.step(now)) return;
+      const pin = track.pin();
+      if (pin && navigateRef.current && followRef.current && !gesture.current && now >= easingUntil.current) {
+        map.jumpTo({
+          center: [pin.longitude, pin.latitude],
+          bearing: track.heading() ?? map.getBearing(),
+          padding: navPadding(map.getContainer().clientHeight, padRef.current),
+        });
+      } else {
+        schedule();
+      }
+    };
+    loop = requestAnimationFrame(tick);
     map.on("move", schedule);
     map.on("resize", schedule);
     return () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(loop);
       map.off("move", schedule);
       map.off("resize", schedule);
     };
@@ -360,9 +402,9 @@ export function MapView({
         {marks.me && !driverIsMe && <LocationDot point={marks.me} heading={null} bearing={marks.bearing} />}
         {marks.driver &&
           (driverIsMe ? (
-            <LocationDot point={marks.driver} heading={heading} bearing={marks.bearing} />
+            <LocationDot point={marks.driver} heading={marks.heading} bearing={marks.bearing} />
           ) : (
-            <CarMarker point={marks.driver} heading={onScreen(heading, marks.bearing)} />
+            <CarMarker point={marks.driver} heading={onScreen(marks.heading, marks.bearing)} />
           ))}
       </div>
     </div>
@@ -456,6 +498,20 @@ function arrowsAlong(path: string, width: number, height: number, spacing = 70) 
  */
 /** Zoom al navegar: deja leer nombres de calles y ver el siguiente giro con calma. */
 const NAV_ZOOM = 17.5;
+
+type Padding = { top: number; bottom: number; left: number; right: number };
+
+/**
+ * Margen de la cámara al navegar: deja el carro en el tercio inferior del área libre
+ * (entre el encabezado y el panel) para que se vea más calle hacia adelante.
+ */
+function navPadding(height: number, pad: number | Padding): Padding {
+  const base = typeof pad === "number" ? { top: 120, bottom: pad, left: 40, right: 40 } : pad;
+  const free = height - base.top - base.bottom;
+  if (free <= 0) return base;
+  const carY = base.top + free * 0.68;
+  return { ...base, top: Math.max(0, Math.round(2 * carY - (height - base.bottom))) };
+}
 
 /** Rumbo relativo a la pantalla: el mapa puede estar girado al navegar. */
 function onScreen(heading: number | null, bearing: number) {

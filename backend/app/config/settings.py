@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     zone_utc_offset_hours: int = -6
     seed: bool = True
     testing: bool = False
-    location_min_interval_s: float = 3
+    location_min_interval_s: float = 1.5
     location_max_age_s: int = 600
     counter_ttl_seconds: int = 15
     vapid_public_key: str = ""

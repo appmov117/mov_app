@@ -124,7 +124,8 @@ export function DriverRide() {
   useEffect(() => {
     const current = invoice ?? ride.data;
     if (!current || current.status === "completed" || current.status === "cancelled") return;
-    const report = createLocationReporter();
+    // El API acepta una ubicación cada 1.5 s; un poco más de margen evita rechazos por desfase.
+    const report = createLocationReporter({ minMoveM: 5, minGapMs: 1_600 });
     const watch = navigator.geolocation.watchPosition(
       (position) => {
         const point = {

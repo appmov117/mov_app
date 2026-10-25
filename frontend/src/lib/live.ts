@@ -153,18 +153,19 @@ export function useLiveInterval(offline: number, online = 60_000) {
 
 /**
  * Devuelve una función que reporta la ubicación del conductor solo cuando hace falta:
- * si se movió al menos 25 m (y pasaron 3 s, el mínimo que acepta el API) o si pasaron 15 s.
+ * si se movió al menos `minMoveM` (y pasaron `minGapMs`) o si pasaron 15 s. Disponible
+ * reporta poco (25 m, 3 s); en viaje, el pasajero necesita verlo casi en vivo.
  * Va por el canal en vivo y, si no está abierto, por HTTP.
  */
-export function createLocationReporter() {
+export function createLocationReporter({ minMoveM = MIN_MOVE_M, minGapMs = MIN_GAP_MS } = {}) {
   let last: { latitude: number; longitude: number; at: number } | null = null;
   return (position: GeolocationPosition) => {
     const point = { latitude: position.coords.latitude, longitude: position.coords.longitude };
     const now = Date.now();
     if (last) {
       const gap = now - last.at;
-      if (gap < MIN_GAP_MS) return;
-      if (gap < MAX_GAP_MS && distanceM(last, point) < MIN_MOVE_M) return;
+      if (gap < minGapMs) return;
+      if (gap < MAX_GAP_MS && distanceM(last, point) < minMoveM) return;
     }
     last = { ...point, at: now };
     const data = { ...point, heading: position.coords.heading, speed: position.coords.speed };
