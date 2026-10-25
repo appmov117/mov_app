@@ -283,7 +283,7 @@ export function PassengerRide() {
             remaining={routeLength(route)}
             leg={`${ride.id}-${status}-${ride.current_stop_index}`}
             eta={approach.data?.duration_s}
-            target={withDriver ? "Recogida" : ride.next_stop ? "Parada" : "Destino"}
+            target={withDriver ? "Punto de encuentro" : ride.next_stop ? "Parada" : "Destino"}
           />
         )}
         {safetyOpen && ride && (

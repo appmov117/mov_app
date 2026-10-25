@@ -87,6 +87,8 @@ export function DriverRide() {
     onSuccess: (data, path) => {
       setAsking(false);
       if (path === "complete" && data) setInvoice(data as Ride);
+      // El servidor devuelve el viaje ya actualizado: se muestra sin esperar la siguiente consulta.
+      else if (data) queryClient.setQueryData(["driver-active"], data);
       queryClient.invalidateQueries({ queryKey: ["driver-active"] });
     },
   });
@@ -226,7 +228,7 @@ export function DriverRide() {
         ? "Navegación al destino"
         : current.status === "driver_arrived"
           ? "Esperando al pasajero"
-          : "Navegación · recogida";
+          : "Navegación · punto de encuentro";
 
   return (
     <Shell nav={false} full>
@@ -267,7 +269,7 @@ export function DriverRide() {
             remaining={routeLength(activeRoute)}
             leg={`${current.id}-${current.status}-${current.current_stop_index}`}
             eta={leg.data?.duration_s}
-            target={going ? (nextStop ? `Parada ${stopNumber}` : "Destino") : "Recogida"}
+            target={going ? (nextStop ? `Parada ${stopNumber}` : "Destino") : "Punto de encuentro"}
           />
         )}
         <button
@@ -339,14 +341,15 @@ export function DriverRide() {
                 </button>
               ))}
             </div>
-            <button className="h-12 w-full rounded-full bg-brand-strong font-semibold" onClick={() => action.mutate("complete")}>
-              Registrar cobro y finalizar
+            <button className="h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60" disabled={action.isPending} onClick={() => action.mutate("complete")}>
+              {action.isPending ? "Finalizando" : "Registrar cobro y finalizar"}
             </button>
           </div>
         )}
         {going && nextStop && (
           <button
-            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold"
+            className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60"
+            disabled={action.isPending}
             onClick={() => action.mutate(current.stop_arrived ? "stops/continue" : "stops/arrived")}
           >
             {current.stop_arrived ? "Continuar al siguiente" : `Llegué al punto ${stopNumber}`}
@@ -358,11 +361,11 @@ export function DriverRide() {
           </button>
         )}
         {!going && step && (
-          <button className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold" onClick={() => action.mutate(step)}>
-            {stepLabel}
+          <button className="mt-4 h-12 w-full rounded-full bg-brand-strong font-semibold disabled:opacity-60" disabled={action.isPending} onClick={() => action.mutate(step)}>
+            {action.isPending ? "Un momento" : stepLabel}
           </button>
         )}
-        {action.error && <p className="mt-2 text-sm text-[#F2C14E]">{(action.error as Error).message}</p>}
+        {action.error && !action.isPending && <p className="mt-2 text-sm text-[#F2C14E]">{(action.error as Error).message}</p>}
       </section>
     </Shell>
   );

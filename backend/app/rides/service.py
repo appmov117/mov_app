@@ -211,6 +211,7 @@ def present_offer(db: Session, offer: RideOffer) -> dict:
         "stops": request.stops,
         "stop_count": len(request.stops),
         "service": request.service,
+        "route": request.route_geometry,
         "pickup_distance_m": pickup,
         "pickup_eta_s": pickup_eta,
         "pickup_by_road": by_road,
@@ -706,6 +707,9 @@ def _owned_ride(db: Session, user: User, ride_id: UUID, *, driver_only: bool = F
 
 def _move(db: Session, user: User, ride_id: UUID, status: str, event_type: str) -> dict:
     ride, driver, _passenger = _owned_ride(db, user, ride_id, driver_only=True)
+    if ride.status == status:
+        # Un segundo toque o un reintento por red lenta: el viaje ya está donde se pidió.
+        return present_ride(db, ride)
     if status not in TRANSITIONS.get(ride.status, set()):
         raise AppError(409, "Esa acción no corresponde al estado del viaje")
     ride.status = status

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Flame, LocateFixed } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapView, type Pin } from "../../components/MapView.tsx";
 import { prepareAlerts } from "../../components/DriverBeacon.tsx";
@@ -28,6 +28,7 @@ type Offer = {
   estimated_fare: number | null;
   status: "pending" | "countered";
   service: "auto" | "moto" | "paquete";
+  route: { coordinates: number[][] } | null;
   /** Tarifa mínima del viaje: el conductor puede cobrarla o proponer un precio mayor. */
   min_counter_fare: number | null;
   proposed_fare: number | null;
@@ -63,6 +64,23 @@ export function DriverHome() {
   }, []);
 
   const offer = offers.data?.[0];
+  // Si la solicitud desaparece sin que el conductor la responda (venció o la tomó otro), se le avisa.
+  const seenOffer = useRef<string | null>(null);
+  const answered = useRef(false);
+  const [missed, setMissed] = useState(false);
+  useEffect(() => {
+    if (offer) {
+      if (seenOffer.current !== offer.id) answered.current = false;
+      seenOffer.current = offer.id;
+      return;
+    }
+    const lost = seenOffer.current != null && !answered.current;
+    seenOffer.current = null;
+    if (!lost) return;
+    setMissed(true);
+    const timer = window.setTimeout(() => setMissed(false), 5000);
+    return () => window.clearTimeout(timer);
+  }, [offer?.id]);
   const online = me.data?.driver_status === "online" || me.data?.driver_status === "busy";
 
   // Con un viaje en curso solo se queda aquí para responder la oferta del viaje siguiente.
@@ -82,12 +100,17 @@ export function DriverHome() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["driver"] }),
   });
   const accept = useMutation({
-    mutationFn: (id: string) => api(`/api/v1/ride-offers/${id}/accept`, { method: "POST" }),
+    mutationFn: (id: string) => {
+      answered.current = true;
+      return api(`/api/v1/ride-offers/${id}/accept`, { method: "POST" });
+    },
     onSuccess: () => navigate("/conductor/viaje"),
   });
   const reject = useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/v1/ride-offers/${id}/reject`, { method: "POST", body: JSON.stringify({ pause_minutes: 5 }) }),
+    mutationFn: (id: string) => {
+      answered.current = true;
+      return api(`/api/v1/ride-offers/${id}/reject`, { method: "POST", body: JSON.stringify({ pause_minutes: 5 }) });
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["offers"] }),
   });
   const counter = useMutation({
@@ -127,19 +150,23 @@ export function DriverHome() {
             </div>
             <Countdown seconds={seconds} total={offerSeconds} />
           </div>
-          <ol className="mx-5 mt-5 rounded-2xl bg-white/[0.06] px-4 py-3.5">
-            <RouteStop color="bg-brand-bright" title="Recogida" place={offer.origin_label ?? "Punto de recogida"} detail={pickupDetail(offer)} line />
+          <ol className="mx-5 mt-4 space-y-1.5 rounded-xl bg-white/[0.06] px-3.5 py-2.5 text-sm">
+            <RouteStop color="bg-brand-bright" place={offer.origin_label ?? "Punto de encuentro"} detail={pickupDetail(offer)} />
             {offer.stop_count > 0 && (
-              <RouteStop
-                color="bg-white/50"
-                title={`${offer.stop_count} ${offer.stop_count === 1 ? "parada intermedia" : "paradas intermedias"}`}
-                line
-              />
+              <RouteStop color="bg-white/50" place={`${offer.stop_count} ${offer.stop_count === 1 ? "parada" : "paradas"} en el camino`} />
             )}
-            <RouteStop color="bg-[#f87171]" square title="Destino" place={offer.destination_label?.split(" · ")[0] ?? "Destino"} />
+            <RouteStop color="bg-[#f87171]" square place={offer.destination_label?.split(" · ")[0] ?? "Destino"} />
           </ol>
           <div className="relative mx-5 mt-4 min-h-[140px] flex-1 overflow-hidden rounded-2xl">
-            <MapView center={offer.origin} origin={offer.origin} destination={offer.destination} stops={offer.stops} />
+            <MapView
+              center={offer.origin}
+              origin={offer.origin}
+              destination={offer.destination}
+              stops={offer.stops}
+              route={offer.route?.coordinates}
+              fitPadding={28}
+              interactive={false}
+            />
           </div>
           <div className="space-y-2 px-5 pb-6 pt-4">
             {(accept.error || counter.error) && (
@@ -259,6 +286,11 @@ export function DriverHome() {
         >
           <LocateFixed size={22} />
         </button>
+        {missed && (
+          <p role="status" className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-ink px-4 py-2 text-sm font-semibold text-surface shadow-lg">
+            La solicitud ya no está disponible
+          </p>
+        )}
         <div className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-3 rounded-full bg-surface/95 py-1.5 pl-4 pr-1.5 text-ink shadow-lg backdrop-blur">
           <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
             {online && <span className="absolute inset-0 animate-ping rounded-full bg-ok opacity-60" />}
@@ -327,22 +359,19 @@ function CounterWaiting({ offer }: { offer: Offer }) {
 function pickupDetail(offer: Offer) {
   if (offer.pickup_distance_m == null) return "Cerca de ti";
   const approx = offer.pickup_by_road ? "" : "≈ ";
-  const distance = offer.pickup_distance_m < 100 ? "menos de 100 m" : km(offer.pickup_distance_m);
+  const distance = offer.pickup_distance_m < 100 ? "< 100 m" : km(offer.pickup_distance_m);
   const minutes = offer.pickup_eta_s != null ? `${approx}${Math.max(1, Math.round(offer.pickup_eta_s / 60))} min · ` : "";
-  if (offer.after_current_ride) return `Al terminar tu viaje · ${minutes}${approx}${distance} de tu destino actual`;
-  return `${minutes}${approx}${distance} de ti${offer.pickup_by_road ? " por calle" : ""}`;
+  if (offer.after_current_ride) return `Al terminar · ${minutes}${approx}${distance}`;
+  return `${minutes}${approx}${distance}`;
 }
 
-function RouteStop({ color, title, place, detail, line = false, square = false }: { color: string; title: string; place?: string; detail?: string; line?: boolean; square?: boolean }) {
+/** Una línea por punto del viaje: el color y la forma indican si es encuentro, parada o destino. */
+function RouteStop({ color, place, detail, square = false }: { color: string; place: string; detail?: string; square?: boolean }) {
   return (
-    <li className="relative flex gap-3 pb-3 last:pb-0">
-      {line && <span className="absolute left-[5px] top-4 h-full w-0.5 bg-white/15" aria-hidden="true" />}
-      <span className={`relative mt-1.5 h-3 w-3 shrink-0 ${square ? "rounded-sm" : "rounded-full"} ${color}`} aria-hidden="true" />
-      <span className="min-w-0">
-        <span className="block text-xs text-white/60">{title}</span>
-        {place && <span className="block truncate font-semibold">{place}</span>}
-        {detail && <span className="block text-sm text-white/70">{detail}</span>}
-      </span>
+    <li className="flex items-center gap-2.5">
+      <span className={`h-2.5 w-2.5 shrink-0 ${square ? "rounded-sm" : "rounded-full"} ${color}`} aria-hidden="true" />
+      <span className="min-w-0 truncate font-semibold">{place}</span>
+      {detail && <span className="ml-auto shrink-0 text-xs text-white/60">{detail}</span>}
     </li>
   );
 }

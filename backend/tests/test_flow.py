@@ -133,6 +133,9 @@ def test_completed_ride_cannot_be_completed_twice_and_skips_invalid_states(clien
     assert client.post(f"/api/v1/rides/{ride_id}/arriving", headers=headers).status_code == 200
     assert client.post(f"/api/v1/rides/{ride_id}/arrived", headers=headers).status_code == 200
     assert client.post(f"/api/v1/rides/{ride_id}/start", headers=headers).status_code == 200
+    # Un segundo toque en "Iniciar viaje" con la red lenta no debe mostrar error.
+    repeated = client.post(f"/api/v1/rides/{ride_id}/start", headers=headers)
+    assert repeated.status_code == 200 and repeated.json()["status"] == "in_progress"
     done = client.post(
         f"/api/v1/rides/{ride_id}/complete",
         headers=headers,

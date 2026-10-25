@@ -37,6 +37,8 @@ type Props = {
   me?: Pin | null;
   /** Conductores disponibles cerca, como puntos aproximados mientras se busca. */
   nearby?: Pin[];
+  /** Si false, el mapa es solo de vista: no se arrastra ni responde a toques. */
+  interactive?: boolean;
 };
 
 export function MapView({
@@ -59,6 +61,7 @@ export function MapView({
   driverIsMe = false,
   me = null,
   nearby,
+  interactive = true,
 }: Props) {
   const mapRef = useRef<MapRef>(null);
   const mapStyle = useMapStyleProps();
@@ -295,6 +298,7 @@ export function MapView({
         maxPitch={0}
         style={{ width: "100%", height: "100%" }}
         attributionControl={false}
+        interactive={interactive}
         onLoad={(event) => {
           recovery.watch(event.target);
           tuneStyle(event.target, mapStyle.url);
