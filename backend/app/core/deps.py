@@ -24,7 +24,7 @@ def get_current_user(
     except (ValueError, KeyError):
         raise AppError(401, "La sesión no es válida") from None
     user = db.get(User, user_id)
-    if user is None or user.status == "blocked":
+    if user is None or user.status in ("blocked", "deleted"):
         raise AppError(401, "La sesión no es válida")
     if user.status == "suspended":
         raise AppError(403, "Tu cuenta está suspendida")

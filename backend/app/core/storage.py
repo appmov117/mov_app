@@ -82,3 +82,18 @@ def load(key: str) -> bytes | None:
         return response.content
     path = DATA_DIR / key
     return path.read_bytes() if path.is_file() else None
+
+
+def remove(key: str) -> None:
+    """Borra el archivo si existe; un fallo del Storage solo se registra.
+
+    Args:
+        key: Ruta relativa con la que se guardó.
+    """
+    if _remote():
+        try:
+            httpx.delete(_object_url(key), headers=_headers(), timeout=30)
+        except httpx.HTTPError as error:
+            logger.error("storage_delete_failed key=%s error=%s", key, error)
+        return
+    (DATA_DIR / key).unlink(missing_ok=True)

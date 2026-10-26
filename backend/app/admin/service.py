@@ -234,14 +234,19 @@ def set_driver_access(db: Session, driver_id: UUID, *, active: bool, admin: User
 
 
 def list_passengers(db: Session) -> list[dict]:
-    rows = db.execute(select(Passenger, User).join(User, User.id == Passenger.user_id)).all()
+    rows = db.execute(
+        select(Passenger, User).join(User, User.id == Passenger.user_id).order_by(User.created_at.desc())
+    ).all()
     return [
         {
             "id": str(passenger.id),
             "name": user.name,
-            "phone": user.phone,
+            "user_id": str(user.id),
+            "phone": None if user.status == "deleted" else user.phone,
+            "email": user.email,
             "status": user.status,
             "total_rides": passenger.total_rides,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
         }
         for passenger, user in rows
     ]

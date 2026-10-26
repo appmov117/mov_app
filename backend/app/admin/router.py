@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
+from app.admin.accounts import delete_account, list_accounts, passenger_detail, set_account_status
 from app.admin.insights import broadcast, broadcasts, feedback, heatmap, memberships
 from app.admin.motos import moto_overview
 from app.admin.operations import list_rides, live, ride_detail
@@ -80,6 +81,31 @@ def suspend(driver_id: UUID, user: User = Depends(require_role("admin")), db: Se
 @router.get("/passengers")
 def passengers(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
     return list_passengers(db)
+
+
+@router.get("/passengers/{passenger_id}")
+def passenger(passenger_id: UUID, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return passenger_detail(db, passenger_id)
+
+
+@router.get("/accounts")
+def accounts(user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return list_accounts(db)
+
+
+@router.post("/accounts/{user_id}/suspend")
+def suspend_account(user_id: UUID, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return set_account_status(db, user, user_id, active=False)
+
+
+@router.post("/accounts/{user_id}/activate")
+def activate_account(user_id: UUID, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return set_account_status(db, user, user_id, active=True)
+
+
+@router.delete("/accounts/{user_id}")
+def remove_account(user_id: UUID, user: User = Depends(require_role("admin")), db: Session = Depends(get_db)):
+    return delete_account(db, user, user_id)
 
 
 @router.get("/rides")

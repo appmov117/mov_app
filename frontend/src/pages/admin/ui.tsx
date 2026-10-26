@@ -41,6 +41,7 @@ const STATUS: Record<string, [string, Tone]> = {
   dismissed: ["Descartada", "neutral"],
   attended: ["Atendida", "neutral"],
   suspended: ["Suspendido", "bad"],
+  deleted: ["Eliminada", "neutral"],
 };
 
 export const CATEGORY: Record<string, string> = {

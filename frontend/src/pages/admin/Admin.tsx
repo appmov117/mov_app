@@ -14,6 +14,8 @@ import {
   ShieldAlert,
   Star,
   Tags,
+  UserCog,
+  Users,
   Wallet,
   X,
   type LucideIcon,
@@ -23,6 +25,7 @@ import { Link, NavLink, useLocation, useNavigate, useParams } from "react-router
 import { api } from "../../lib/api.ts";
 import { useAuth } from "../../lib/auth.tsx";
 import { enablePush } from "../../lib/push.ts";
+import { Accounts } from "./Accounts.tsx";
 import { Broadcasts } from "./Broadcasts.tsx";
 import { Complaints } from "./Complaints.tsx";
 import { Documents } from "./Documents.tsx";
@@ -33,6 +36,7 @@ import { Live } from "./Live.tsx";
 import { Memberships } from "./Memberships.tsx";
 import { Motos } from "./Motos.tsx";
 import { Overview } from "./Overview.tsx";
+import { Passengers } from "./Passengers.tsx";
 import { Rides } from "./Rides.tsx";
 import { Safety, type Alert } from "./Safety.tsx";
 import { Tariffs } from "./Tariffs.tsx";
@@ -58,6 +62,13 @@ const GROUPS: { title: string; items: Section[] }[] = [
       { id: "motos", label: "Motos", icon: Motorbike },
       { id: "documentos", label: "Documentos", icon: FileCheck2, badge: "documents" },
       { id: "membresias", label: "Membresías y pagos", icon: Wallet, badge: "payments" },
+    ],
+  },
+  {
+    title: "Usuarios",
+    items: [
+      { id: "pasajeros", label: "Pasajeros", icon: Users },
+      { id: "cuentas", label: "Cuentas", icon: UserCog },
     ],
   },
   {
@@ -119,6 +130,8 @@ function SectionView({ section, alerts }: { section: string; alerts: Alert[] }):
     case "motos": return <Motos />;
     case "documentos": return <Documents />;
     case "membresias": return <Memberships />;
+    case "pasajeros": return <Passengers />;
+    case "cuentas": return <Accounts />;
     case "quejas": return <Complaints />;
     case "opiniones": return <Feedback />;
     case "avisos": return <Broadcasts />;
